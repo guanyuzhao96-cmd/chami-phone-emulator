@@ -1,0 +1,12 @@
+{
+  "name": "chami-phone-emulator",
+  "display_name": "模拟手机（角色资料版）",
+  "version": "1.0.0",
+  "author": "茶蘼 & Tavern Scene Team；独立化与角色资料模块：guanyuzhao96-cmd",
+  "description": "从酒馆场景插件中独立剥离的完整模拟手机插件，保留原手机全部应用，并新增角色资料：读取世界书固定资料、根据聊天更新动态资料并写入独立世界书条目。",
+  "minSillyTavernVersion": "1.14.0",
+  "requires": [],
+  "loading_order": 130,
+  "js": "phone-plugin.js",
+  "css": "styles/phone-plugin.css"
+}

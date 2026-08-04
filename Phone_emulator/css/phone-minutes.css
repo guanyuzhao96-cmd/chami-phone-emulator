@@ -1,0 +1,2134 @@
+/* 剧情百科悬浮球样式 */
+.tsp-minutes-fab {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tsp-minutes-fab:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}
+
+.tsp-minutes-fab.dragging {
+    transition: none;
+}
+
+/* 剧情百科面板样式 */
+.tsp-minutes-panel {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background-color: var(--tsp-bg-main);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    z-index: 10000;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    color: var(--tsp-text-primary);
+    transition: transform 0.2s ease;
+}
+
+.tsp-minutes-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tsp-bg-secondary);
+    cursor: move;
+}
+
+.tsp-minutes-panel-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--tsp-text-primary);
+}
+
+.tsp-minutes-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--tsp-text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tsp-minutes-close-btn:hover {
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-primary);
+}
+
+/* 状态栏样式 */
+#status-container {
+    width: 100%;
+    height: calc(100% - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+#tsp-minutes-status-container {
+    width: 100%;
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 标签栏样式 */
+#tsp-minutes-nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--tsp-bg-secondary);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+#tsp-minutes-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tsp-minutes-tab-item {
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--tsp-text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tsp-minutes-tab-item:hover {
+    color: var(--tsp-accent-primary);
+}
+
+.tsp-minutes-tab-item.active {
+    color: var(--tsp-accent-primary);
+    border-bottom-color: var(--tsp-accent-primary);
+    font-weight: bold;
+}
+
+/* 内容区域样式 */
+#tsp-minutes-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    min-height: 0;
+}
+
+.tsp-minutes-grid-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 10px 0;
+    justify-content: flex-start;
+}
+
+/* 角色卡片样式 */
+.tsp-minutes-char-card {
+    position: relative;
+    width: 210px;
+    height: 315px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: var(--tsp-bg-secondary);
+    flex: 0 0 auto;
+}
+
+/* 横向图片卡片样式 */
+.tsp-minutes-char-card-horizontal {
+    width: 315px;
+    height: 210px;
+    flex: 0 0 auto;
+}
+
+/* 方形图片卡片样式 */
+.tsp-minutes-char-card-square {
+    width: 210px;
+    height: 210px;
+    flex: 0 0 auto;
+}
+
+.tsp-minutes-char-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+}
+
+.tsp-minutes-card-state-tag {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: #f56565;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 2;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+.tsp-minutes-char-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    z-index: 0;
+}
+
+.tsp-minutes-char-img-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.tsp-minutes-char-img-container .tsp-generated-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 横向图片容器 */
+.tsp-minutes-char-img-container-horizontal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.tsp-minutes-char-img-container-horizontal .tsp-generated-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 方形图片容器 */
+.tsp-minutes-char-img-container-square {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.tsp-minutes-char-img-container-square .tsp-generated-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.tsp-minutes-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    color: white;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 60px;
+}
+
+/* 横向卡片叠加层 */
+.tsp-minutes-char-card-horizontal .tsp-minutes-card-overlay {
+    min-height: 50px;
+    padding: 10px 15px;
+}
+
+/* 方形卡片叠加层 */
+.tsp-minutes-char-card-square .tsp-minutes-card-overlay {
+    min-height: 50px;
+    padding: 10px 15px;
+}
+
+.tsp-minutes-card-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.tsp-minutes-card-rank {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+
+
+/* 滚动条样式 */
+#tsp-minutes-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+#tsp-minutes-content::-webkit-scrollbar-track {
+    background: var(--tsp-bg-secondary);
+    border-radius: 3px;
+}
+
+#tsp-minutes-content::-webkit-scrollbar-thumb {
+    background: var(--tsp-bg-tertiary);
+    border-radius: 3px;
+}
+
+#tsp-minutes-content::-webkit-scrollbar-thumb:hover {
+    background: var(--tsp-text-secondary);
+}
+
+/* 剧情百科设置页面样式 */
+.tsp-phone-settings-screen {
+    width: 100%;
+    height: 100%;
+    background-color: var(--tsp-bg-main);
+    display: flex;
+    flex-direction: column;
+    color: var(--tsp-text-primary);
+    padding-top: 44px;
+}
+
+.tsp-phone-settings-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--tsp-bg-secondary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.tsp-phone-btn-back {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--tsp-text-primary);
+    cursor: pointer;
+    margin-right: 15px;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tsp-phone-btn-back:hover {
+    background-color: var(--tsp-bg-tertiary);
+}
+
+.tsp-phone-settings-header h2 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--tsp-text-primary);
+}
+
+.tsp-phone-settings-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.tsp-phone-settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--tsp-bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.tsp-phone-settings-item-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.tsp-phone-settings-label {
+    font-size: 14px;
+    color: var(--tsp-text-primary);
+}
+
+.tsp-phone-settings-label-large {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+/* 选择框样式 */
+.tsp-input {
+    background-color: var(--tsp-bg-input);
+    color: var(--tsp-text-input);
+    border: 1px solid var(--tsp-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    width: 150px;
+}
+
+.tsp-input:focus {
+    outline: none;
+    border-color: var(--tsp-accent-primary);
+    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.2);
+}
+
+/* 世界书映射设置样式 */
+.tsp-phone-settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.tsp-phone-settings-checkbox-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.tsp-phone-settings-checkbox-row span {
+    font-size: 14px;
+    color: var(--tsp-text-primary);
+}
+
+.tsp-phone-settings-checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* 开关样式 */
+.tsp-phone-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.tsp-phone-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.tsp-phone-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #4a5568;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.tsp-phone-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #e2e8f0;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.tsp-phone-toggle input:checked + .tsp-phone-toggle-slider {
+    background-color: #48bb78;
+}
+
+/* 添加角色按钮 */
+.tsp-add-character-btn {
+    margin-left: 10px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tsp-add-character-btn:hover {
+    background-color: #2c5282;
+}
+
+/* 空状态提示 */
+.tsp-minutes-empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0aec0;
+    font-size: 16px;
+}
+
+/* 错误提示 */
+.tsp-minutes-error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: #fc8181;
+    font-size: 16px;
+}
+
+.tsp-phone-toggle input:focus + .tsp-phone-toggle-slider {
+    box-shadow: 0 0 1px #48bb78;
+}
+
+.tsp-phone-toggle input:checked + .tsp-phone-toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* 剧情百科应用图标样式 */
+.tsp-phone-app-icon-box.minutes {
+    background-color: #2d3748;
+    color: #48bb78;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 1px solid #4a5568;
+}
+
+.tsp-phone-app-icon-box.minutes i {
+    font-size: 24px;
+}
+
+/* 角色详情面板样式 */
+.tsp-minutes-character-detail {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--tsp-bg-main);
+    border-radius: 0 0 10px 10px;
+    z-index: 10001;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tsp-minutes-detail-header {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--tsp-bg-secondary);
+    background-color: var(--tsp-bg-main);
+}
+
+.tsp-minutes-detail-back {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--tsp-text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.tsp-minutes-detail-back:hover {
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-primary);
+}
+
+.tsp-minutes-detail-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--tsp-text-primary);
+    flex: 1;
+    text-align: center;
+}
+
+.tsp-minutes-detail-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--tsp-text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 15px;
+}
+
+.tsp-minutes-detail-close:hover {
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-primary);
+}
+
+.tsp-minutes-detail-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* 表单样式 */
+#tsp-character-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tsp-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tsp-form-label {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--tsp-accent-primary); /* 键的颜色与值不同 */
+}
+
+.tsp-minutes-panel input[type="text"].tsp-form-input,
+.tsp-minutes-panel select.tsp-form-input,
+.tsp-minutes-panel .tsp-form-input {
+    padding: 10px !important;
+    background: var(--tsp-bg-input) !important; /* 同步覆盖 background 避免被宿主属性覆盖 */
+    background-color: var(--tsp-bg-input) !important;
+    border: 1px solid var(--tsp-border) !important;
+    border-radius: 6px !important;
+    color: var(--tsp-text-input) !important; /* 值的颜色跟随主题 */
+    font-size: 14px !important;
+    box-sizing: border-box !important;
+}
+
+.tsp-minutes-panel input[type="text"].tsp-form-input:focus,
+.tsp-minutes-panel select.tsp-form-input:focus,
+.tsp-minutes-panel .tsp-form-input:focus {
+    outline: none !important;
+    border-color: var(--tsp-accent-primary) !important;
+    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.2) !important;
+}
+
+.tsp-form-section {
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px solid var(--tsp-bg-secondary);
+}
+
+.tsp-form-section h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px; /* 第一层级的大字体 */
+    color: var(--tsp-accent-primary);
+    font-weight: bold;
+}
+
+.tsp-form-section-content {
+    margin-left: 20px; /* 第二层级的缩进 */
+}
+
+.tsp-form-section-content .tsp-form-label {
+    font-size: 13px; /* 第二层级的小字体 */
+}
+
+.tsp-form-section-content input[type="text"].tsp-form-input,
+.tsp-form-section-content select.tsp-form-input {
+    font-size: 13px !important;
+}
+
+.tsp-form-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tsp-btn-primary {
+    padding: 12px 24px;
+    background-color: var(--tsp-accent-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.tsp-btn-primary:hover {
+    background-color: var(--tsp-accent-primary);
+    opacity: 0.8;
+}
+
+.tsp-btn-primary:active {
+    transform: translateY(1px);
+}
+
+/* 次要按钮样式 */
+.tsp-btn-secondary {
+    padding: 12px 24px;
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-primary);
+    border: 1px solid var(--tsp-bg-tertiary);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tsp-btn-secondary:hover {
+    background-color: var(--tsp-bg-tertiary);
+    border-color: var(--tsp-accent-primary);
+    color: var(--tsp-accent-primary);
+}
+
+.tsp-btn-secondary:active {
+    transform: translateY(1px);
+}
+
+/* 角色详情面板滚动条样式 */
+.tsp-minutes-detail-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tsp-minutes-detail-content::-webkit-scrollbar-track {
+    background: var(--tsp-bg-secondary);
+    border-radius: 3px;
+}
+
+.tsp-minutes-detail-content::-webkit-scrollbar-thumb {
+    background: var(--tsp-bg-tertiary);
+    border-radius: 3px;
+}
+
+.tsp-minutes-detail-content::-webkit-scrollbar-thumb:hover {
+    background: var(--tsp-text-secondary);
+}
+/* 美化详情页面样式 */
+.tsp-minutes-character-beauty-detail {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--tsp-bg-main);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    z-index: 10001;
+}
+
+.tsp-minutes-beauty-detail-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.tsp-minutes-beauty-detail-left {
+    flex: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    height: 100%;
+    border: 1px solid var(--tsp-text-secondary);
+}
+
+.tsp-minutes-beauty-detail-left .tsp-minutes-image-slot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+.tsp-minutes-beauty-detail-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.tsp-minutes-beauty-detail-left .tsp-generated-image {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain;
+    border-radius: 0 !important;
+    box-shadow: none;
+}
+
+.tsp-minutes-beauty-detail-right {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.tsp-minutes-beauty-detail-section {
+    margin-bottom: 24px;
+}
+
+.tsp-minutes-beauty-detail-section h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--tsp-text-primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--tsp-bg-secondary);
+}
+
+.tsp-minutes-beauty-detail-subsection {
+    margin-left: 16px;
+}
+
+.tsp-minutes-beauty-detail-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--tsp-text-secondary);
+    align-items: flex-start;
+}
+
+.tsp-minutes-beauty-detail-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--tsp-text-secondary);
+    margin-bottom: 4px;
+}
+
+.tsp-minutes-beauty-detail-value {
+    flex: 1;
+    color: var(--tsp-text-primary);
+    word-break: break-word;
+}
+
+.tsp-minutes-detail-edit-btn {
+    background: rgba(123, 183, 255, 0.2);
+    color: rgba(123, 183, 255, 0.9);
+    border: 1px solid rgba(123, 183, 255, 0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tsp-minutes-detail-edit-btn:hover {
+    background: rgba(123, 183, 255, 0.3);
+    color: rgba(123, 183, 255, 1);
+}
+
+/* 美化详情页面返回按钮样式 */
+.tsp-minutes-beauty-detail-back {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--tsp-text-secondary);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    transition: all 0.2s ease;
+}
+
+.tsp-minutes-beauty-detail-back:hover {
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-primary);
+}
+
+/* 美化详情页面滚动条样式 */
+.tsp-minutes-beauty-detail-right::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tsp-minutes-beauty-detail-right::-webkit-scrollbar-track {
+    background: var(--tsp-bg-secondary);
+    border-radius: 3px;
+}
+
+.tsp-minutes-beauty-detail-right::-webkit-scrollbar-thumb {
+    background: var(--tsp-bg-tertiary);
+    border-radius: 3px;
+}
+
+.tsp-minutes-beauty-detail-right::-webkit-scrollbar-thumb:hover {
+    background: var(--tsp-text-secondary);
+}
+/* 关系图面板样式 */
+.tsp-minutes-relationship-detail {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--tsp-bg-main);
+    border-radius: 0 0 10px 10px;
+    z-index: 10001;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tsp-minutes-relationship-content {
+    flex: 1;
+    padding: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tsp-relationship-graph-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--tsp-bg-secondary);
+    border-radius: 8px;
+    touch-action: none;
+}
+
+.tsp-relationship-nodes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.tsp-relationship-links {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* 关系图节点样式 */
+.tsp-relationship-node {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.tsp-relationship-node:hover {
+    transform: scale(1.1);
+}
+
+.tsp-relationship-node-selected {
+    transform: scale(1.1);
+}
+
+.tsp-relationship-node-selected .tsp-relationship-avatar {
+    border-color: var(--tsp-theme-color);
+    box-shadow: 0 0 15px 2px var(--tsp-theme-color);
+}
+
+.tsp-relationship-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--tsp-accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--tsp-bg-main);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tsp-relationship-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tsp-relationship-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--tsp-text-primary);
+    background-color: var(--tsp-bg-tertiary);
+}
+
+.tsp-relationship-node-name {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--tsp-text-primary);
+    text-align: center;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 关系图连线样式 */
+.tsp-relationship-link {
+    position: absolute;
+    height: 2px;
+    background-color: var(--tsp-accent-primary);
+    transform-origin: left center;
+    z-index: 0;
+}
+
+.tsp-relationship-link::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -4px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid var(--tsp-accent-primary);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    z-index: 3;
+}
+
+.tsp-relationship-link-label {
+    position: absolute;
+    background-color: var(--tsp-bg-main);
+    color: var(--tsp-text-primary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--tsp-border);
+    z-index: 2;
+}
+
+
+/* 关系图控制按钮 */
+.tsp-relationship-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    display: flex;
+    gap: 5px;
+}
+
+.tsp-relationship-zoom-in,
+.tsp-relationship-zoom-out {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: var(--tsp-bg-main);
+    color: var(--tsp-text-primary);
+    border: 1px solid var(--tsp-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+.tsp-relationship-zoom-in:hover,
+.tsp-relationship-zoom-out:hover {
+    background-color: var(--tsp-bg-secondary);
+    transform: scale(1.1);
+}
+
+/* 关系图包装器 */
+.tsp-relationship-graph-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: center;
+    /* 调整默认过渡，并加入GPU渲染提成 */
+    transition: transform 0.2s ease;
+    will-change: transform;
+    backface-visibility: hidden;
+    cursor: grab; /* 修正原本为move */
+}
+
+
+/* 头像占位符样式 */
+.tsp-minutes-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--tsp-text-primary);
+    background-color: var(--tsp-bg-tertiary);
+    border-radius: 50%;
+}
+
+/* 擂台界面样式 */
+.tsp-minutes-battle-arena {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.tsp-battle-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
+    text-align: center;
+}
+
+.tsp-battle-empty-icon {
+    font-size: 48px;
+    color: var(--tsp-accent-primary);
+}
+
+.tsp-battle-empty-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--tsp-text-primary);
+}
+
+.tsp-battle-empty-desc {
+    font-size: 14px;
+    color: var(--tsp-text-secondary);
+}
+
+.tsp-battle-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: 20px;
+    align-items: stretch;
+    padding: 10px;
+}
+
+.tsp-battle-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tsp-battle-player-side {
+    align-items: flex-start;
+}
+
+.tsp-battle-enemy-side {
+    align-items: flex-end;
+}
+
+.tsp-battle-character-panel {
+    width: 100%;
+    height: 100%;
+    background: var(--tsp-bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tsp-battle-player-side .tsp-battle-character-panel {
+    border: 2px solid #4CAF50;
+}
+
+.tsp-battle-enemy-side .tsp-battle-character-panel {
+    border: 2px solid #f44336;
+}
+
+.tsp-battle-character-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--tsp-text-primary);
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tsp-bg-tertiary);
+}
+
+.tsp-battle-character-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tsp-battle-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--tsp-bg-tertiary);
+    border-radius: 6px;
+}
+
+.tsp-battle-stat-label {
+    font-size: 14px;
+    color: var(--tsp-text-secondary);
+}
+
+.tsp-battle-stat-value {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--tsp-accent-primary);
+}
+
+.tsp-battle-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.tsp-battle-skill {
+    font-size: 13px;
+    color: var(--tsp-text-primary);
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+}
+
+.tsp-battle-character-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--tsp-bg-secondary);
+    position: relative;
+}
+
+.tsp-btn-small {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    min-width: auto !important;
+    background-color: var(--tsp-bg-secondary);
+    color: var(--tsp-text-secondary);
+    border: 1px solid var(--tsp-border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.tsp-btn-small:hover {
+    background-color: var(--tsp-bg-tertiary);
+    color: var(--tsp-accent-primary);
+    border-color: var(--tsp-accent-primary);
+}
+
+.tsp-btn-small:active {
+    transform: scale(0.95);
+}
+
+.tsp-battle-character-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.tsp-battle-edit-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.tsp-battle-edit-label {
+    font-size: 13px;
+    color: var(--tsp-text-secondary);
+    font-weight: 500;
+}
+
+.tsp-battle-edit-input {
+    padding: 8px 10px !important;
+    background: var(--tsp-bg-input) !important;
+    background-color: var(--tsp-bg-input) !important;
+    border: 1px solid var(--tsp-border) !important;
+    border-radius: 6px !important;
+    color: var(--tsp-text-input) !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+}
+
+.tsp-battle-edit-input:focus {
+    outline: none !important;
+    border-color: var(--tsp-accent-primary) !important;
+    box-shadow: 0 0 0 2px rgba(122, 162, 247, 0.2) !important;
+}
+
+.tsp-btn-battle-save {
+    margin-top: 15px;
+    width: 100%;
+}
+
+.tsp-battle-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-width: 120px;
+}
+
+.tsp-battle-vs {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--tsp-accent-primary);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tsp-btn-battle {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+    font-size: 16px;
+    padding: 12px 24px;
+    box-shadow: 0 4px 12px rgba(255, 65, 108, 0.4);
+}
+
+.tsp-btn-battle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 65, 108, 0.6);
+}
+
+.tsp-btn-regenerate {
+    background: var(--tsp-bg-tertiary);
+    color: var(--tsp-text-primary);
+    border: 1px solid var(--tsp-border);
+    font-size: 14px;
+    padding: 8px 16px;
+}
+
+.tsp-btn-regenerate:hover {
+    background: var(--tsp-bg-secondary);
+}
+
+.tsp-btn-loading {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.tsp-btn-loading:hover {
+    transform: none !important;
+}
+
+.tsp-btn-loading .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 战斗场景 */
+.tsp-battle-scene {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.tsp-battle-map {
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: auto;
+    max-height: calc(100% - 120px);
+}
+
+/* 角色立绘 */
+.tsp-battle-character {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.tsp-battle-player-character {
+    position: absolute;
+    left: 80px;
+    top: 20px;
+}
+
+.tsp-battle-enemy-character {
+    position: absolute;
+    right: 80px;
+    top: 20px;
+}
+
+.tsp-battle-portrait {
+    width: 200px;
+    height: 300px;
+    object-fit: contain;
+    object-position: bottom;
+}
+
+.tsp-battle-name-tag {
+    order: -1;
+    margin-bottom: 8px;
+    padding: 6px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* HP条 */
+.tsp-battle-hp-bar-container {
+    width: 180px;
+    margin-bottom: 10px;
+}
+
+.tsp-battle-hp-bar {
+    width: 100%;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.tsp-battle-hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ff6666);
+    transition: width 0.3s ease;
+}
+
+.tsp-battle-hp-text {
+    text-align: center;
+    color: white;
+    font-size: 12px;
+    margin-top: 4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    font-weight: bold;
+}
+
+/* 气点 */
+.tsp-battle-qi-container {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.tsp-battle-qi-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.tsp-battle-qi-dot-active {
+    background: linear-gradient(135deg, #ffaa00, #ff6600);
+    box-shadow: 0 0 8px #ffaa00;
+}
+
+/* 回合指示器 */
+.tsp-battle-turn-indicator {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 30px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* 战斗日志 */
+.tsp-battle-log {
+    width: 280px;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border-left: 2px solid #0f3460;
+    padding: 16px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.tsp-battle-log-entry {
+    color: white;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tsp-battle-log-entry:last-child {
+    border-bottom: none;
+}
+
+/* 战斗底部栏容器 */
+.tsp-battle-bottom-bar {
+    display: flex;
+    height: 140px;
+    background: linear-gradient(to top, #1a1a2e, #16213e);
+    border-top: 3px solid #0f3460;
+}
+
+/* 技能栏 */
+.tsp-battle-skill-bar {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 技能卡牌 */
+.tsp-battle-skill-card {
+    width: 110px;
+    height: 100px;
+    background: linear-gradient(135deg, #2d3436, #636e72);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid #74b9ff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tsp-battle-skill-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    border-color: #0984e3;
+}
+
+.tsp-battle-skill-card-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(50%);
+}
+
+.tsp-battle-skill-card-disabled:hover {
+    transform: none;
+}
+
+.tsp-battle-skill-name {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    line-height: 1.3;
+}
+
+.tsp-battle-skill-cost {
+    color: #fdcb6e;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tsp-battle-skill-type-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    color: #74b9ff;
+}
+
+/* 退出战斗按钮 */
+.tsp-btn-exit-battle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--tsp-text-primary);
+    border: 1px solid var(--tsp-border);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.tsp-btn-exit-battle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.tsp-btn-exit-battle:active {
+    transform: scale(0.95);
+}
+
+/* 战斗结果 */
+.tsp-battle-result-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.tsp-battle-result-panel {
+    background: linear-gradient(135deg, #2d3436, #1a1a2e);
+    border-radius: 20px;
+    padding: 40px 60px;
+    text-align: center;
+    border: 3px solid #0984e3;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.tsp-battle-result-title {
+    font-size: 36px;
+    font-weight: bold;
+    color: #fdcb6e;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tsp-battle-result-icon {
+    font-size: 64px;
+    color: #fdcb6e;
+    margin-bottom: 20px;
+}
+
+.tsp-battle-result-text {
+    font-size: 18px;
+    color: #dfe6e9;
+    margin-bottom: 30px;
+}
+
+.tsp-battle-result-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+/* 响应式设计 */
+@media (max-width: 1000px) {
+    .tsp-minutes-panel {
+        width: 95%;
+        left: 2.5%;
+        transform: none;
+    }
+
+    .tsp-minutes-grid-layout {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .tsp-relationship-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .tsp-relationship-node-name {
+        font-size: 10px;
+        max-width: 80px;
+    }
+
+    .tsp-battle-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .tsp-battle-center {
+        flex-direction: row;
+        min-height: 80px;
+    }
+
+    .tsp-battle-vs {
+        font-size: 24px;
+    }
+
+    /* 战斗场景响应式 */
+    .tsp-battle-portrait {
+        width: 140px;
+        height: 210px;
+    }
+
+    .tsp-battle-player-character {
+        left: 40px;
+    }
+
+    .tsp-battle-enemy-character {
+        right: 40px;
+    }
+
+    /* 响应式底部栏 */
+    .tsp-battle-bottom-bar {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .tsp-battle-skill-bar {
+        flex-wrap: wrap;
+        height: auto;
+        gap: 8px;
+        padding: 12px 16px;
+        min-height: 100px;
+    }
+
+    .tsp-battle-skill-card {
+        width: 90px;
+        height: 85px;
+    }
+
+    .tsp-battle-skill-name {
+        font-size: 11px;
+    }
+
+    .tsp-battle-log {
+        width: 100%;
+        height: 150px;
+        border-left: none;
+        border-top: 2px solid #0f3460;
+    }
+}
+
+/* 战斗按钮组样式 */
+.tsp-battle-button-group {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    gap: 8px;
+}
+
+/* 全屏按钮样式 */
+.tsp-btn-fullscreen-battle {
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--tsp-text-primary);
+    border: 1px solid var(--tsp-border);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+}
+
+.tsp-btn-fullscreen-battle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--tsp-accent-primary);
+    color: var(--tsp-accent-primary);
+}
+
+.tsp-btn-fullscreen-battle:active {
+    transform: scale(0.95);
+}
+
+/* 调整战斗按钮位置 */
+.tsp-battle-button-group .tsp-btn-exit-battle {
+    position: relative;
+    top: auto;
+    right: auto;
+}
+
+/* 全屏模式样式 */
+.tsp-minutes-panel.tsp-minutes-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: min(100dvh, 100vh) !important;
+    border-radius: 0;
+    z-index: 99999;
+    transform: none !important;
+    padding: 0;
+    margin: 0;
+}
+
+/* 全屏模式下隐藏头部（可选）*/
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-minutes-panel-header {
+    display: none;
+}
+
+/* 全屏模式下的内容容器 */
+.tsp-minutes-panel.tsp-minutes-fullscreen #tsp-minutes-status-container {
+    height: 100%;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen #tsp-minutes-content {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 全屏模式下的战斗场景放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-scene {
+    width: 100%;
+    height: 100%;
+}
+
+/* 全屏模式下的地图占满整个高度 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-map {
+    height: calc(100% - 180px);
+    max-height: none;
+    flex: none;
+}
+
+/* 全屏模式下的底部栏 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-bottom-bar {
+    height: 180px;
+}
+
+/* 全屏模式下的技能栏 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-bar {
+    flex: 1;
+}
+
+/* 全屏模式下的立绘放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-portrait {
+    width: 300px;
+    height: 450px;
+}
+
+/* 全屏模式下的立绘位置调整 - 使用底部百分比定位，确保不管地图高度如何变化，立绘都能从底部开始对齐 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-character {
+    position: absolute !important;
+    margin-top: 0 !important;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-player-character {
+    position: absolute !important;
+    left: 10% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 5% !important;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-enemy-character {
+    position: absolute !important;
+    right: 10% !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: 5% !important;
+}
+
+/* 全屏模式下的HP条放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-hp-bar-container {
+    width: 270px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-hp-bar {
+    height: 24px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-hp-text {
+    font-size: 16px;
+}
+
+/* 全屏模式下的气点放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-qi-dot {
+    width: 18px;
+    height: 18px;
+}
+
+/* 全屏模式下的名字标签放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-name-tag {
+    padding: 8px 24px;
+    font-size: 18px;
+}
+
+/* 全屏模式下的回合指示器放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-turn-indicator {
+    padding: 12px 40px;
+    font-size: 20px;
+}
+
+/* 全屏模式下的战斗日志放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-log {
+    width: 420px;
+    height: 100%;
+    padding: 20px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-log-entry {
+    font-size: 15px;
+    padding: 8px 0;
+}
+
+/* 全屏模式下的技能栏放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-bar {
+    padding: 20px 30px;
+    gap: 16px;
+}
+
+/* 全屏模式下的技能卡牌放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-card {
+    width: 165px;
+    height: 150px;
+    padding: 15px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-name {
+    font-size: 15px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-cost {
+    font-size: 14px;
+}
+
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-type-tag {
+    font-size: 11px;
+}
+
+/* 全屏模式下的按钮放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-btn-fullscreen-battle,
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-btn-exit-battle {
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+/* 技能气泡样式 */
+.tsp-battle-skill-bubble {
+    position: absolute;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    animation: bubbleAppear 0.3s ease-out;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+/* 玩家技能气泡 - 显示在立绘右侧 */
+.tsp-battle-player-character .tsp-battle-skill-bubble {
+    left: calc(100% + 10px);
+    top: 30%;
+}
+
+/* 敌人技能气泡 - 显示在立绘左侧 */
+.tsp-battle-enemy-character .tsp-battle-skill-bubble {
+    right: calc(100% + 10px);
+    top: 30%;
+}
+
+/* 技能气泡尾巴 */
+.tsp-battle-skill-bubble::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+}
+
+.tsp-battle-player-character .tsp-battle-skill-bubble::after {
+    right: -16px;
+    transform: translateY(-50%);
+    border-left-color: rgba(0, 0, 0, 0.85);
+}
+
+.tsp-battle-enemy-character .tsp-battle-skill-bubble::after {
+    left: -16px;
+    transform: translateY(-50%);
+    border-right-color: rgba(0, 0, 0, 0.85);
+}
+
+/* 伤害数字样式 */
+.tsp-battle-damage-number {
+    position: absolute;
+    font-size: 28px;
+    font-weight: bold;
+    color: #ff4444;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    animation: damageFloat 1s ease-out forwards;
+}
+
+/* 玩家受到伤害 - 显示在玩家立绘附近 */
+.tsp-battle-player-character .tsp-battle-damage-number {
+    right: -30px;
+    top: 50%;
+}
+
+/* 敌人受到伤害 - 显示在敌人立绘附近 */
+.tsp-battle-enemy-character .tsp-battle-damage-number {
+    left: -30px;
+    top: 50%;
+}
+
+/* 动画关键帧 */
+@keyframes bubbleAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes damageFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-30px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.8);
+    }
+}
+
+/* 攻击特效样式 */
+.tsp-battle-attack-effect {
+    position: absolute;
+    width: 150px;
+    height: 200px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 1;
+}
+
+/* 用户攻击敌人 - 特效显示在敌人左侧30%进入立绘内部 */
+.tsp-battle-enemy-character .tsp-battle-attack-effect {
+    right: calc(100% - 45%);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 敌人攻击用户 - 特效显示在用户右侧30%进入立绘内部 */
+.tsp-battle-player-character .tsp-battle-attack-effect {
+    left: calc(100% - 45%);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 全屏模式下的攻击特效放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-attack-effect {
+    width: 225px;
+    height: 300px;
+}
+
+/* 全屏模式下的技能气泡放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-skill-bubble {
+    padding: 12px 24px;
+    font-size: 22px;
+}
+
+/* 全屏模式下的伤害数字放大 */
+.tsp-minutes-panel.tsp-minutes-fullscreen .tsp-battle-damage-number {
+    font-size: 36px;
+}
+

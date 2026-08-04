@@ -1,0 +1,933 @@
+.tsp-phone-forum-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    padding-top: 44px;
+}
+
+.tsp-phone-forum-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.tsp-phone-forum-actions {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    max-height: 200px;
+    overflow: hidden;
+}
+
+.tsp-phone-forum-actions.collapsed {
+    max-height: 0;
+    padding: 0 15px;
+    opacity: 0;
+}
+
+.tsp-phone-forum-actions-wrapper {
+    position: relative;
+}
+
+.tsp-phone-forum-toggle {
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tsp-phone-forum-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+}
+
+.tsp-phone-forum-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(240, 147, 251, 0.5);
+}
+
+.tsp-phone-forum-toggle-btn i {
+    transition: transform 0.3s ease;
+}
+
+.tsp-phone-forum-post-card, .tsp-phone-forum-summary-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    animation: fadeInUp 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tsp-phone-forum-post-card:hover, .tsp-phone-forum-summary-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(240, 147, 251, 0.3);
+}
+
+.tsp-phone-forum-summary-card {
+    cursor: pointer;
+}
+
+.tsp-phone-forum-post-summary {
+    padding: 0 15px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tsp-phone-forum-post-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    gap: 12px;
+}
+
+.tsp-phone-forum-post-avatar-wrapper {
+    flex-shrink: 0;
+}
+
+.tsp-phone-forum-post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(240, 147, 251, 0.3);
+}
+
+.tsp-phone-forum-post-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tsp-phone-forum-post-nickname {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.tsp-phone-forum-post-time {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+}
+
+.tsp-phone-forum-post-more {
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 8px;
+}
+
+.tsp-phone-forum-post-more:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.tsp-phone-forum-post-title {
+    padding: 10px 15px 5px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.tsp-phone-forum-post-content {
+    padding: 0 15px 15px;
+    color: white;
+    font-size: 15px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.tsp-phone-forum-post-category {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, rgba(240, 147, 251, 0.2) 0%, rgba(245, 87, 108, 0.2) 100%);
+    color: #f093fb;
+    border: 1px solid rgba(240, 147, 251, 0.3);
+}
+
+.tsp-phone-forum-post-image {
+    margin: 0 15px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.tsp-phone-forum-image-icon {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.tsp-phone-forum-image-caption {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.tsp-phone-forum-post-actions {
+    display: flex;
+    padding: 0 15px 15px;
+    gap: 20px;
+}
+
+.tsp-phone-forum-action-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    font-size: 14px;
+}
+
+.tsp-phone-forum-action-item:hover {
+    color: #f093fb;
+}
+
+.tsp-phone-forum-action-count {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tsp-phone-forum-add-comment {
+    display: flex;
+    gap: 6px;
+    padding: 0 15px 15px;
+}
+
+.tsp-phone-forum-comment-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 10px 15px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.tsp-phone-forum-comment-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.tsp-phone-forum-comment-input:focus {
+    border-color: #f093fb;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tsp-phone-forum-comment-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tsp-phone-forum-comment-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+.tsp-phone-forum-reply-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.tsp-phone-forum-reply-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+}
+
+.tsp-phone-forum-comments-section {
+    padding: 0 15px 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10px;
+}
+
+.tsp-phone-forum-comments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+}
+
+.tsp-phone-forum-comments-count {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.tsp-phone-forum-comment-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tsp-phone-forum-comment-item:last-child {
+    border-bottom: none;
+}
+
+.tsp-phone-forum-comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.tsp-phone-forum-comment-header {
+    margin-bottom: 4px;
+}
+
+.tsp-phone-forum-comment-nickname {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.tsp-phone-forum-comment-text {
+    color: white;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.tsp-phone-forum-comment-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 6px;
+}
+
+.tsp-phone-forum-comment-action {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tsp-phone-forum-comment-action:hover {
+    color: #f093fb;
+}
+
+.tsp-phone-forum-action-item .liked {
+    color: #ff4757;
+}
+
+.tsp-phone-forum-action-item .liked:hover {
+    color: #ff6b81;
+}
+
+.tsp-phone-forum-comment-delete-action:hover {
+    color: #ff4757;
+}
+
+.tsp-phone-forum-category-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.tsp-phone-forum-category-tag.gossip {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.tsp-phone-forum-category-tag.rumor {
+    background: rgba(156, 39, 176, 0.2);
+    color: #9c27b0;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.tsp-phone-forum-category-tag.fun {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.tsp-phone-forum-category-tag.chat {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.tsp-phone-forum-category-tag.other {
+    background: rgba(158, 158, 158, 0.2);
+    color: #9e9e9e;
+    border: 1px solid rgba(158, 158, 158, 0.3);
+}
+
+.tsp-phone-forum-hot-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+    color: white;
+    margin-left: 8px;
+}
+
+.tsp-phone-forum-hot-badge i {
+    font-size: 10px;
+}
+
+.tsp-phone-forum-stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tsp-phone-forum-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+}
+
+.tsp-phone-forum-stat-item i {
+    font-size: 14px;
+}
+
+.tsp-phone-forum-stat-item span {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tsp-phone-user-post-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    padding-top: 44px;
+}
+
+.tsp-phone-user-post-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.tsp-phone-user-post-actions {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tsp-phone-user-post-actions .tsp-phone-btn {
+    flex: 1;
+}
+
+.tsp-phone-required {
+    color: #ff4757;
+    margin-left: 2px;
+}
+
+.tsp-phone-char-count {
+    text-align: right;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.tsp-phone-form-textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.tsp-phone-form-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.tsp-phone-form-textarea:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tsp-phone-form-hint {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.tsp-phone-form-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.tsp-phone-form-select:focus {
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.tsp-phone-form-select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+.tsp-phone-form-input,
+#tsp-phone-post-title,
+#tsp-phone-post-image-desc,
+#tsp-phone-post-image-tags,
+#tsp-phone-post-nickname {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    color: white !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+.tsp-phone-form-input::placeholder,
+#tsp-phone-post-title::placeholder,
+#tsp-phone-post-image-desc::placeholder,
+#tsp-phone-post-image-tags::placeholder,
+#tsp-phone-post-nickname::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+    opacity: 1 !important;
+}
+
+.tsp-phone-form-input:focus,
+#tsp-phone-post-title:focus,
+#tsp-phone-post-image-desc:focus,
+#tsp-phone-post-image-tags:focus,
+#tsp-phone-post-nickname:focus {
+    border-color: #667eea !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 帖子分类下拉框样式 */
+#tsp-phone-post-category {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    color: white !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
+}
+
+#tsp-phone-post-category option {
+    background: #1a1a2e !important;
+    color: white !important;
+    padding: 8px !important;
+}
+
+#tsp-phone-post-category:focus {
+    border-color: #667eea !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 帖子内容文本域样式 */
+#tsp-phone-post-content {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    color: white !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+    resize: vertical !important;
+    min-height: 100px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+#tsp-phone-post-content::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+    opacity: 1 !important;
+}
+
+#tsp-phone-post-content:focus {
+    border-color: #667eea !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 论坛设置页面样式 */
+.tsp-phone-forum-categories-list .tsp-phone-form-input,
+.tsp-phone-forum-categories-list .tsp-phone-form-textarea,
+#tsp-phone-extra-rules {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    color: white !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+}
+
+.tsp-phone-forum-categories-list .tsp-phone-form-input::placeholder,
+.tsp-phone-forum-categories-list .tsp-phone-form-textarea::placeholder,
+#tsp-phone-extra-rules::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+    opacity: 1 !important;
+}
+
+.tsp-phone-forum-categories-list .tsp-phone-form-input:focus,
+.tsp-phone-forum-categories-list .tsp-phone-form-textarea:focus,
+#tsp-phone-extra-rules:focus {
+    border-color: #667eea !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* 分类名称输入框特殊样式 */
+.tsp-phone-category-name-group .tsp-phone-form-input {
+    min-width: 120px !important;
+}
+
+.tsp-phone-form-group {
+    margin-bottom: 16px;
+}
+
+.tsp-phone-form-label {
+    display: block;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.tsp-phone-form-label i {
+    margin-right: 6px;
+    color: #667eea;
+}
+
+/* 论坛设置页面样式 */
+.tsp-phone-forum-settings-view {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    padding-top: 44px;
+}
+
+.tsp-phone-forum-settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.tsp-phone-forum-settings-header {
+    margin-bottom: 20px;
+}
+
+.tsp-phone-forum-settings-header h3 {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.tsp-phone-forum-settings-header p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+}
+
+.tsp-phone-forum-categories-list {
+    margin-bottom: 20px;
+}
+
+.tsp-phone-forum-category-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 12px;
+}
+
+.tsp-phone-forum-category-inputs {
+    flex: 1;
+}
+
+.tsp-phone-forum-category-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+}
+
+.tsp-phone-category-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 16px;
+}
+
+.tsp-phone-category-name-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.tsp-phone-category-name-group .tsp-phone-form-input {
+    max-width: 200px;
+}
+
+.tsp-phone-category-row .tsp-phone-btn-danger {
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#tsp-phone-add-category {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.tsp-phone-forum-settings-actions {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    bottom: 0;
+}
+
+.tsp-phone-forum-settings-actions .tsp-phone-btn {
+    flex: 1;
+}
+
+/* 发布菜单样式 */
+.tsp-phone-post-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.tsp-phone-post-menu-content {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tsp-phone-post-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.tsp-phone-post-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.tsp-phone-post-menu-item i {
+    font-size: 20px;
+    color: #667eea;
+}
+
+.tsp-phone-post-menu-cancel {
+    background: rgba(255, 71, 87, 0.1);
+    border-color: rgba(255, 71, 87, 0.2);
+}
+
+.tsp-phone-post-menu-cancel i {
+    color: #ff4757;
+}
+
+.tsp-phone-post-menu-cancel:hover {
+    background: rgba(255, 71, 87, 0.2);
+    border-color: rgba(255, 71, 87, 0.4);
+}
+
+/* 确保状态栏有足够的空间 */
+.tsp-phone-forum-view,
+.tsp-phone-user-post-view,
+.tsp-phone-forum-settings-view {
+    padding-top: 44px;
+}
+
+/* 按钮样式 */
+.tsp-phone-btn {
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.tsp-phone-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.tsp-phone-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.tsp-phone-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tsp-phone-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tsp-phone-btn-danger {
+    background: rgba(255, 71, 87, 0.1);
+    color: #ff4757;
+    border: 1px solid rgba(255, 71, 87, 0.2);
+}
+
+.tsp-phone-btn-danger:hover {
+    background: rgba(255, 71, 87, 0.2);
+    border-color: rgba(255, 71, 87, 0.4);
+}
