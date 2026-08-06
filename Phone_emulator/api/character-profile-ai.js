@@ -127,10 +127,11 @@ function formatWorldbookEntries(entries, maxChars = 70000) {
 
 function normalizeSourceSelection(value, entries) {
     const source = value && typeof value === 'object' ? value : {};
+    const validIndexes = new Set(entries.map(entry => Number(entry.index)));
     const indexes = [...new Set(
         (Array.isArray(source.entryIndexes) ? source.entryIndexes : [])
             .map(item => Number(item))
-            .filter(item => Number.isInteger(item) && item >= 0 && item < entries.length),
+            .filter(item => Number.isInteger(item) && validIndexes.has(item)),
     )];
     return {
         aliases: normalizeArray(source.aliases),
