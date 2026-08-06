@@ -1,3 +1,4 @@
-/* 独立模拟手机插件：仅加载手机及角色资料样式，不加载酒馆场景插件样式。 */
+/* 独立模拟手机插件：仅加载手机、角色资料与酒馆场景图片桥接样式。 */
 @import url('../Phone_emulator/css/phone-emulator.css');
 @import url('../Phone_emulator/css/phone-character-profile.css');
+@import url('../Phone_emulator/css/tavern-scene-image-bridge.css');
