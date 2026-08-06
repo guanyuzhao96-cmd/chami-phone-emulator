@@ -9,7 +9,7 @@ const MODULE_NAME = 'phoneEmulator';
 
 let initialized = false;
 let phoneInstance = null;
-let databaseReady = false;
+let contextReady = false;
 
 function setStatus(stage, error = null) {
     window.__CHAMI_PHONE_STATUS__ = {
@@ -31,15 +31,24 @@ function showToast(message, type = 'info') {
     console[type === 'error' ? 'error' : 'log'](`[${PLUGIN_ID}] ${message}`);
 }
 
-async function ensurePhoneDatabase() {
-    if (databaseReady) return;
-    setStatus('initializing-database');
-    if (!legacyContext?.db || typeof legacyContext.db.init !== 'function') {
-        throw new Error('手机数据库适配器不可用。');
+async function ensurePhoneContext() {
+    if (contextReady) return;
+    setStatus('initializing-context');
+
+    if (typeof legacyContext?.init === 'function') {
+        await legacyContext.init();
+    } else if (legacyContext?.db && typeof legacyContext.db.init === 'function') {
+        await legacyContext.db.init();
+    } else {
+        throw new Error('手机基础上下文不可用。');
     }
-    await legacyContext.db.init();
-    databaseReady = true;
-    setStatus('database-ready');
+
+    if (!legacyContext.api || !legacyContext.db || !legacyContext.events) {
+        throw new Error('手机基础上下文初始化不完整。');
+    }
+
+    contextReady = true;
+    setStatus('context-ready');
 }
 
 function createPhoneContext() {
@@ -89,7 +98,7 @@ async function initializeStandalonePhone() {
         return;
     }
 
-    await ensurePhoneDatabase();
+    await ensurePhoneContext();
     const phoneContext = createPhoneContext();
     setStatus('initializing-phone');
     await initPhoneEmulator(phoneContext);
