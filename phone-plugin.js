@@ -2,14 +2,18 @@
 
 import { pluginContext as legacyContext } from './core/plugin-context.js';
 import { initPhoneEmulator } from './Phone_emulator/index.js';
+import { PhoneChatStorage } from './Phone_emulator/db/chat-storage.js';
+import { PhoneMemeStorage } from './Phone_emulator/db/meme-storage.js';
+import { PhoneAIRequest } from './Phone_emulator/api/ai-request.js';
 
 const PLUGIN_ID = 'chami-phone-emulator';
-const VERSION = '1.1.0';
+const VERSION = '1.3.0';
 const MODULE_NAME = 'phoneEmulator';
 const STORAGE_PREFIX = 'chami_phone_fallback:';
 
 let initialized = false;
 let phoneInstance = null;
+let phoneAIRuntime = null;
 let imageBridge = null;
 let contextReady = false;
 
@@ -116,6 +120,28 @@ function createPhoneContext() {
     return traceObject('context', context);
 }
 
+async function createPhoneAIRuntime(context) {
+    const chatStorage = new PhoneChatStorage(context);
+    const memeStorage = new PhoneMemeStorage(context);
+    const aiRequest = new PhoneAIRequest(context);
+    await chatStorage.init();
+    await memeStorage.init();
+    aiRequest.setChatStorage(chatStorage);
+    aiRequest.setMemeStorage(memeStorage);
+    await aiRequest.init();
+    return {
+        aiRequest,
+        chatStorage,
+        memeStorage,
+        owned: true,
+    };
+}
+
+function exposePhoneAIRuntime(runtime) {
+    phoneAIRuntime = runtime;
+    window.__CHAMI_PHONE_AI_RUNTIME__ = runtime;
+}
+
 async function waitForSillyTavern(timeoutMs = 30000) {
     setStatus('waiting-for-sillytavern');
     const start = Date.now();
@@ -142,6 +168,7 @@ function exposePlugin({ mode, context = null, instance = null, existingFab = nul
         mode,
         context,
         instance,
+        aiRuntime: phoneAIRuntime,
         imageBridge,
         open: () => instance?.openModal?.() || existingFab?.click?.(),
         close: () => instance?.closeModal?.(),
@@ -152,24 +179,34 @@ async function initializeStandalonePhone() {
     if (initialized || window.__CHAMI_STANDALONE_PHONE_LOADED__) return;
     setStatus('starting');
     await waitForSillyTavern();
-    await loadAddonModules();
-
+    await ensurePhoneContext();
+    const phoneContext = createPhoneContext();
     const existingFab = document.querySelector('.tsp-phone-fab');
+
     if (existingFab) {
+        setStatus('initializing-attached-phone-ai');
+        exposePhoneAIRuntime(await createPhoneAIRuntime(phoneContext));
+        await loadAddonModules();
         initialized = true;
-        exposePlugin({ mode: 'attached-to-existing-phone', existingFab });
+        exposePlugin({ mode: 'attached-to-existing-phone', context: phoneContext, existingFab });
         imageBridge?.scan?.();
         setStatus('attached-to-existing-phone');
-        showToast('已在原酒馆场景手机中加载角色资料和“生成图片”按钮', 'success');
+        showToast('已在原酒馆场景手机中加载角色资料、手机AI预设和“生成图片”按钮', 'success');
         return;
     }
 
-    await ensurePhoneContext();
-    const phoneContext = createPhoneContext();
     setStatus('initializing-phone');
     await initPhoneEmulator(phoneContext);
     phoneInstance = phoneContext.getModule(MODULE_NAME);
     if (!phoneInstance || !document.querySelector('.tsp-phone-fab')) throw new Error('手机主体初始化完成，但未创建悬浮按钮。');
+
+    exposePhoneAIRuntime({
+        aiRequest: phoneInstance.aiRequest,
+        chatStorage: phoneInstance.chatStorage,
+        memeStorage: phoneInstance.memeStorage,
+        owned: false,
+    });
+    await loadAddonModules();
 
     initialized = true;
     exposePlugin({ mode: 'standalone-phone', context: phoneContext, instance: phoneInstance });
@@ -186,5 +223,6 @@ initializeStandalonePhone().catch(error => {
 
 window.addEventListener('beforeunload', () => {
     try { phoneInstance?.cleanup?.(); } catch { /* 页面卸载阶段忽略清理异常。 */ }
+    try { phoneAIRuntime?.owned && phoneAIRuntime?.aiRequest?.cleanup?.(); } catch { /* 忽略 */ }
     try { imageBridge?.destroy?.(); } catch { /* 页面卸载阶段忽略桥接清理异常。 */ }
 });
