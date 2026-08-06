@@ -16,7 +16,7 @@ function walk(dir) {
 
 function scan(file) {
   const source = fs.readFileSync(file, 'utf8');
-  const re = /import\s+([^;]+?)\s+from\s+(['"])(\/[^'"]+\.js)\2/g;
+  const re = /import\s*([^;]+?)\s*from\s*(['"])(\/[^'"]+\.js)\2/g;
   for (const match of source.matchAll(re)) {
     const clause = match[1].trim();
     if (clause.startsWith('{')) {
