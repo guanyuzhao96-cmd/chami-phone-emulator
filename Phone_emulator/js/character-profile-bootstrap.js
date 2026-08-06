@@ -78,18 +78,21 @@ async function attachToPhone(phoneContainer) {
     const ui = new PhoneCharacterProfileUI(createContext(), phoneContainer);
     instances.set(phoneContainer, ui);
 
+    // 原版手机可能已经停留在聊天或朋友圈页面，没有首页节点。
+    // 先放置常驻入口，再尝试初始化首页图标；即使首页监听失败，入口仍可使用。
+    ensureFallbackLauncher(phoneContainer, ui);
+
     try {
         await ui.init();
-        ensureFallbackLauncher(phoneContainer, ui);
-        const observer = new MutationObserver(() => ensureFallbackLauncher(phoneContainer, ui));
-        observer.observe(phoneContainer, { childList: true, subtree: true });
-        ui.__launcherObserver = observer;
         console.log('[角色资料] 已挂载到模拟手机');
     } catch (error) {
-        instances.delete(phoneContainer);
-        console.error('[角色资料] 初始化失败', error);
-        showToast(`角色资料模块初始化失败：${error.message || error}`, 'error');
+        console.warn('[角色资料] 首页图标初始化失败，已保留兼容入口', error);
     }
+
+    ensureFallbackLauncher(phoneContainer, ui);
+    const observer = new MutationObserver(() => ensureFallbackLauncher(phoneContainer, ui));
+    observer.observe(phoneContainer, { childList: true, subtree: true });
+    ui.__launcherObserver = observer;
 }
 
 function scan() {
