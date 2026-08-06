@@ -69,5 +69,5 @@ for (const name of [...names].sort()) {
 }
 if (needsDefault) lines.push('export default {};');
 fs.writeFileSync(path.join(root, 'tests/generated-stubs.mjs'), `${lines.join('\n')}\n`);
-console.log(`Generated ${names.size} SillyTavern named export stubs.`);
+console.log(`Generated ${names.size} SillyTavern named export stubs: ${[...names].sort().join(', ')}`);
 console.log([...externalImports].sort().join('\n'));
