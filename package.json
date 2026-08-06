@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "validate": "node tests/validate.mjs",
-    "smoke": "node tests/generate-stubs.mjs && node --experimental-loader ./tests/st-loader.mjs tests/smoke.mjs"
+    "smoke": "node tests/generate-stubs.mjs && node --experimental-loader ./tests/st-loader.mjs tests/smoke.mjs && node --experimental-loader ./tests/st-loader.mjs tests/attached-mode.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",

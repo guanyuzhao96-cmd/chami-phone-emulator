@@ -4,12 +4,13 @@ import { pluginContext as legacyContext } from './core/plugin-context.js';
 import { initPhoneEmulator } from './Phone_emulator/index.js';
 
 const PLUGIN_ID = 'chami-phone-emulator';
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 const MODULE_NAME = 'phoneEmulator';
 const STORAGE_PREFIX = 'chami_phone_fallback:';
 
 let initialized = false;
 let phoneInstance = null;
+let imageBridge = null;
 let contextReady = false;
 
 function traceAccess(scope, property, value) {
@@ -125,29 +126,54 @@ async function waitForSillyTavern(timeoutMs = 30000) {
     setStatus('sillytavern-ready');
 }
 
+async function loadAddonModules() {
+    setStatus('loading-addon-modules');
+    await import('./Phone_emulator/js/character-profile-bootstrap.js');
+    const bridgeModule = await import('./Phone_emulator/js/tavern-scene-image-bridge.js');
+    imageBridge = bridgeModule.initTavernSceneImageBridge();
+    setStatus('addon-modules-ready');
+}
+
+function exposePlugin({ mode, context = null, instance = null, existingFab = null }) {
+    window.__CHAMI_STANDALONE_PHONE_LOADED__ = true;
+    window.ChamiPhoneEmulator = {
+        id: PLUGIN_ID,
+        version: VERSION,
+        mode,
+        context,
+        instance,
+        imageBridge,
+        open: () => instance?.openModal?.() || existingFab?.click?.(),
+        close: () => instance?.closeModal?.(),
+    };
+}
+
 async function initializeStandalonePhone() {
     if (initialized || window.__CHAMI_STANDALONE_PHONE_LOADED__) return;
     setStatus('starting');
     await waitForSillyTavern();
-    if (document.querySelector('.tsp-phone-fab')) {
-        setStatus('duplicate-phone-detected');
-        showToast('检测到另一个模拟手机实例。请在原酒馆场景插件中关闭“手机模拟器”，然后刷新页面。', 'warning');
+    await loadAddonModules();
+
+    const existingFab = document.querySelector('.tsp-phone-fab');
+    if (existingFab) {
+        initialized = true;
+        exposePlugin({ mode: 'attached-to-existing-phone', existingFab });
+        imageBridge?.scan?.();
+        setStatus('attached-to-existing-phone');
+        showToast('已在原酒馆场景手机中加载角色资料和“生成图片”按钮', 'success');
         return;
     }
+
     await ensurePhoneContext();
     const phoneContext = createPhoneContext();
     setStatus('initializing-phone');
     await initPhoneEmulator(phoneContext);
     phoneInstance = phoneContext.getModule(MODULE_NAME);
     if (!phoneInstance || !document.querySelector('.tsp-phone-fab')) throw new Error('手机主体初始化完成，但未创建悬浮按钮。');
-    setStatus('loading-character-profile');
-    await import('./Phone_emulator/js/character-profile-bootstrap.js');
+
     initialized = true;
-    window.__CHAMI_STANDALONE_PHONE_LOADED__ = true;
-    window.ChamiPhoneEmulator = {
-        id: PLUGIN_ID, version: VERSION, context: phoneContext, instance: phoneInstance,
-        open: () => phoneInstance?.openModal?.(), close: () => phoneInstance?.closeModal?.(),
-    };
+    exposePlugin({ mode: 'standalone-phone', context: phoneContext, instance: phoneInstance });
+    imageBridge?.scan?.();
     setStatus('ready');
     showToast('独立模拟手机已加载', 'success');
 }
@@ -160,4 +186,5 @@ initializeStandalonePhone().catch(error => {
 
 window.addEventListener('beforeunload', () => {
     try { phoneInstance?.cleanup?.(); } catch { /* 页面卸载阶段忽略清理异常。 */ }
+    try { imageBridge?.destroy?.(); } catch { /* 页面卸载阶段忽略桥接清理异常。 */ }
 });
