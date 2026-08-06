@@ -220,10 +220,15 @@ export class PhoneCharacterProfileUI {
                     overlapMessages: Number(this.root.querySelector('#cp-overlap').value) || 5,
                 });
                 this.toast('角色资料设置已保存', 'success');
-                await this.renderSettings();
+                await this.renderList();
             }));
         } catch (error) {
             this.error(error, () => this.renderList());
         }
+    }
+
+    cleanup() {
+        this.close();
+        this.observer?.disconnect();
     }
 }
