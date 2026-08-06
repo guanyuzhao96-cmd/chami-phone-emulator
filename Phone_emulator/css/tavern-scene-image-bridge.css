@@ -1,0 +1,189 @@
+.chami-phone-image-generate-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(93, 95, 239, 0.12);
+    color: #5254d9;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.chami-phone-image-generate-btn:hover {
+    background: rgba(93, 95, 239, 0.2);
+}
+
+.chami-phone-image-generate-btn i {
+    font-size: 14px;
+}
+
+.tsp-phone-nav-actions .chami-phone-image-generate-btn {
+    margin-left: 6px;
+}
+
+.chami-phone-image-dialog-overlay,
+.chami-phone-image-preview {
+    position: absolute;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(10, 12, 22, 0.56);
+    backdrop-filter: blur(4px);
+}
+
+.chami-phone-image-dialog,
+.chami-phone-image-preview-card {
+    width: min(100%, 340px);
+    max-height: calc(100% - 24px);
+    overflow: auto;
+    padding: 16px;
+    border-radius: 18px;
+    background: #fff;
+    color: #20212a;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.chami-phone-image-dialog-header,
+.chami-phone-image-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.chami-phone-image-dialog-header strong,
+.chami-phone-image-preview-header strong {
+    font-size: 15px;
+}
+
+.chami-phone-image-dialog-header button,
+.chami-phone-image-preview-header button {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: #f1f2f6;
+    color: #50515a;
+    cursor: pointer;
+}
+
+.chami-phone-image-dialog label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.chami-phone-image-dialog textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 128px;
+    resize: vertical;
+    padding: 11px 12px;
+    border: 1px solid #d9dbe7;
+    border-radius: 12px;
+    background: #fafaff;
+    color: #20212a;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    outline: none;
+}
+
+.chami-phone-image-dialog textarea:focus {
+    border-color: #696bea;
+    box-shadow: 0 0 0 3px rgba(105, 107, 234, 0.12);
+}
+
+.chami-phone-image-dialog-help {
+    margin: 8px 0 0;
+    color: #737582;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.chami-phone-image-dialog-status {
+    min-height: 18px;
+    margin-top: 8px;
+    color: #c13d3d;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.chami-phone-image-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.chami-phone-image-dialog-actions button {
+    min-height: 34px;
+    padding: 7px 13px;
+    border: 0;
+    border-radius: 10px;
+    background: #eceef4;
+    color: #3f414a;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.chami-phone-image-dialog-actions button.primary {
+    background: #5d5fef;
+    color: #fff;
+}
+
+.chami-phone-image-dialog-actions button.primary:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.chami-phone-image-dialog-actions button.loading i {
+    animation: chami-phone-image-spin 0.9s linear infinite;
+}
+
+.chami-phone-image-preview-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.chami-phone-image-preview-list img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #f1f2f6;
+}
+
+.chami-phone-image-preview-list img:only-child {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    max-height: 360px;
+    object-fit: contain;
+}
+
+.chami-phone-image-preview-prompt {
+    margin: 10px 0 0;
+    color: #676975;
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
+@keyframes chami-phone-image-spin {
+    to { transform: rotate(360deg); }
+}
