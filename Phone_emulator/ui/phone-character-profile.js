@@ -26,8 +26,6 @@ export class PhoneCharacterProfileUI {
         await this.storage.init();
         this.injectIcon();
         this.observer = new MutationObserver(() => this.injectIcon());
-        // The original Tavern Scene phone replaces the home screen while an app is open.
-        // Observe the whole phone so the icon is injected whenever the home grid returns.
         this.observer.observe(this.phoneContainer, { childList: true, subtree: true });
     }
 
@@ -105,8 +103,9 @@ export class PhoneCharacterProfileUI {
         this.openLayer();
         try {
             const profiles = this.service.getProfiles();
-            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav('角色资料', '<button class="tsp-character-profile-nav-btn" data-settings><i class="fas fa-sliders-h"></i></button>')}<div class="tsp-character-profile-content"><div class="tsp-character-profile-intro"><strong>固定资料</strong>来自世界书且只读；<strong>动态资料</strong>来自聊天并写入独立世界书条目。</div><div class="tsp-character-profile-list">${profiles.length ? profiles.map(profile => this.profileCard(profile)).join('') : this.empty()}</div></div><button class="tsp-character-profile-fab" data-create><i class="fas fa-plus"></i></button></div>`;
+            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav('角色资料', '<button class="tsp-character-profile-nav-btn" data-settings><i class="fas fa-sliders-h"></i></button>')}<div class="tsp-character-profile-content"><div class="tsp-character-profile-intro"><strong>固定资料</strong>可从你手动选择的任意世界书读取；<strong>动态资料</strong>结合当前聊天生成并写入独立世界书条目。</div><button class="tsp-character-profile-primary-btn" data-auto-generate-profile><i class="fas fa-wand-magic-sparkles"></i> AI 自动生成角色信息</button><div class="tsp-character-profile-list">${profiles.length ? profiles.map(profile => this.profileCard(profile)).join('') : this.empty()}</div></div><button class="tsp-character-profile-fab" data-create title="手动创建"><i class="fas fa-plus"></i></button></div>`;
             this.bindBack();
+            this.root.querySelector('[data-auto-generate-profile]')?.addEventListener('click', () => this.renderAutoGenerate());
             this.root.querySelector('[data-create]')?.addEventListener('click', () => this.renderCreate());
             this.root.querySelector('[data-settings]')?.addEventListener('click', () => this.renderSettings());
             this.root.querySelectorAll('[data-profile]').forEach(node => node.addEventListener('click', () => this.renderDetail(node.dataset.profile)));
@@ -117,15 +116,45 @@ export class PhoneCharacterProfileUI {
 
     profileCard(profile) {
         const text = profile.dynamic?.relationshipWithUser || profile.dynamic?.currentStatus || '动态资料已建立';
-        return `<button class="tsp-character-profile-card" data-profile="${h(profile.profileId)}"><div class="tsp-character-profile-avatar">${h(profile.characterName.slice(0, 1))}</div><div class="tsp-character-profile-card-main"><div class="tsp-character-profile-card-title">${h(profile.characterName)}</div><div class="tsp-character-profile-card-subtitle">${h(text)}</div><div class="tsp-character-profile-card-meta">更新至第 ${Number(profile.lastProcessedMessageId) + 1} 条消息</div></div><i class="fas fa-chevron-right"></i></button>`;
+        const source = profile.sourceWorldbookName ? `来源：${profile.sourceWorldbookName}` : `更新至第 ${Number(profile.lastProcessedMessageId) + 1} 条消息`;
+        return `<button class="tsp-character-profile-card" data-profile="${h(profile.profileId)}"><div class="tsp-character-profile-avatar">${h(profile.characterName.slice(0, 1))}</div><div class="tsp-character-profile-card-main"><div class="tsp-character-profile-card-title">${h(profile.characterName)}</div><div class="tsp-character-profile-card-subtitle">${h(text)}</div><div class="tsp-character-profile-card-meta">${h(source)}</div></div><i class="fas fa-chevron-right"></i></button>`;
     }
 
     empty() {
-        return '<div class="tsp-character-profile-empty"><i class="fas fa-address-book"></i><div class="tsp-character-profile-empty-title">尚未创建角色资料</div><div>点击右下角“＋”，从世界书和当前聊天建立第一份资料。</div></div>';
+        return '<div class="tsp-character-profile-empty"><i class="fas fa-address-book"></i><div class="tsp-character-profile-empty-title">尚未创建角色资料</div><div>点击上方“AI 自动生成角色信息”，选择一本世界书后生成。</div></div>';
+    }
+
+    worldbookOptions(names) {
+        if (!names.length) return '<option value="">没有检测到世界书</option>';
+        return names.map(name => `<option value="${h(name)}">${h(name)}</option>`).join('');
+    }
+
+    async renderAutoGenerate() {
+        this.openLayer();
+        try {
+            const names = await this.service.getWorldbookNames();
+            const currentName = this.service.getContextInfo().cardName;
+            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav('AI 自动生成')}<div class="tsp-character-profile-content"><div class="tsp-character-profile-intro">选择一本世界书作为固定资料来源。它<strong>不需要绑定当前角色卡</strong>。AI 会读取其中与目标角色相关的条目，并结合当前聊天生成动态资料。</div><label class="tsp-character-profile-label">读取的世界书</label><select class="tsp-character-profile-input" id="cp-auto-book">${this.worldbookOptions(names)}</select><label class="tsp-character-profile-label">目标角色</label><input class="tsp-character-profile-input" id="cp-auto-name" value="${h(currentName)}" placeholder="默认使用当前角色卡名称"><label class="tsp-character-profile-label">补充别名（可选）</label><input class="tsp-character-profile-input" id="cp-auto-alias" placeholder="多个别名用逗号分隔"><div class="tsp-character-profile-hint">生成结果优先写入当前角色卡的主世界书；若当前角色卡没有主世界书，则写入本次选择的世界书。读取来源不会因为未绑定而失效。</div><button class="tsp-character-profile-primary-btn" data-auto-submit ${names.length ? '' : 'disabled'}><i class="fas fa-wand-magic-sparkles"></i> 读取世界书并生成</button></div></div>`;
+            this.bindBack(() => this.renderList());
+            this.root.querySelector('[data-auto-submit]')?.addEventListener('click', event => this.busy(event.currentTarget, '正在读取并生成…', async () => {
+                const worldbookName = this.root.querySelector('#cp-auto-book').value;
+                const characterName = this.root.querySelector('#cp-auto-name').value;
+                const aliases = this.root.querySelector('#cp-auto-alias').value;
+                const profile = await this.service.createProfileFromWorldbook({
+                    worldbookName,
+                    characterName,
+                    aliases,
+                });
+                this.toast(`已从“${worldbookName}”生成 ${profile.characterName} 的角色资料`, 'success');
+                await this.renderDetail(profile.profileId);
+            }));
+        } catch (error) {
+            this.error(error, () => this.renderList());
+        }
     }
 
     candidateRows(entries) {
-        if (!entries.length) return '<div class="tsp-character-profile-empty-small">当前角色卡没有可用世界书条目。</div>';
+        if (!entries.length) return '<div class="tsp-character-profile-empty-small">当前角色卡绑定的世界书中没有可用条目。</div>';
         return entries.map(item => `<label class="tsp-character-profile-entry-row"><input type="checkbox" class="tsp-character-profile-entry-check" data-book="${h(item.bookName)}" data-uid="${h(item.uid ?? '')}" data-name="${h(item.name)}"><div><div class="tsp-character-profile-entry-name">${h(item.name)}</div><div class="tsp-character-profile-entry-book">${h(item.bookName)}</div><div class="tsp-character-profile-entry-preview">${h(item.content.replace(/\s+/g, ' ').slice(0, 90))}</div></div></label>`).join('');
     }
 
@@ -133,7 +162,7 @@ export class PhoneCharacterProfileUI {
         this.openLayer();
         try {
             const entries = await this.service.getWorldbookCandidates();
-            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav('创建角色资料')}<div class="tsp-character-profile-content"><label class="tsp-character-profile-label">角色姓名</label><input class="tsp-character-profile-input" id="cp-name" placeholder="例如：林星冉"><label class="tsp-character-profile-label">别名</label><input class="tsp-character-profile-input" id="cp-alias" placeholder="多个别名用逗号分隔"><label class="tsp-character-profile-label">固定资料来源</label><div class="tsp-character-profile-hint">选中的世界书条目只作为不可修改的事实来源。</div><input class="tsp-character-profile-input" id="cp-search" placeholder="搜索世界书条目"><div class="tsp-character-profile-entry-list" id="cp-entries">${this.candidateRows(entries)}</div><button class="tsp-character-profile-primary-btn" data-submit><i class="fas fa-wand-magic-sparkles"></i> 创建并生成动态资料</button></div></div>`;
+            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav('手动创建角色资料')}<div class="tsp-character-profile-content"><label class="tsp-character-profile-label">角色姓名</label><input class="tsp-character-profile-input" id="cp-name" placeholder="例如：林星冉"><label class="tsp-character-profile-label">别名</label><input class="tsp-character-profile-input" id="cp-alias" placeholder="多个别名用逗号分隔"><label class="tsp-character-profile-label">固定资料来源</label><div class="tsp-character-profile-hint">手动模式仅显示当前角色卡绑定的世界书条目；自动模式可读取任意世界书。</div><input class="tsp-character-profile-input" id="cp-search" placeholder="搜索世界书条目"><div class="tsp-character-profile-entry-list" id="cp-entries">${this.candidateRows(entries)}</div><button class="tsp-character-profile-primary-btn" data-submit><i class="fas fa-wand-magic-sparkles"></i> 创建并生成动态资料</button></div></div>`;
             this.bindBack(() => this.renderList());
             const search = this.root.querySelector('#cp-search');
             search.addEventListener('input', async () => {
@@ -174,8 +203,8 @@ export class PhoneCharacterProfileUI {
             const profile = this.service.getProfile(profileId);
             await this.service.refreshFixedSources(profile);
             const fixed = this.service.combineFixedSources(profile.fixedSources);
-            const sources = profile.fixedSources?.length ? profile.fixedSources.map(source => `<span class="${source.missing ? 'missing' : ''}">${h(source.bookName)}／${h(source.entryName)}</span>`).join('') : '<span>未绑定固定资料条目</span>';
-            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav(profile.characterName, '<button class="tsp-character-profile-nav-btn danger" data-delete><i class="fas fa-trash"></i></button>')}<div class="tsp-character-profile-content"><section class="tsp-character-profile-section locked"><div class="tsp-character-profile-section-title"><i class="fas fa-lock"></i> 固定资料</div><div class="tsp-character-profile-source-summary">${sources}</div><pre class="tsp-character-profile-fixed-content">${h(fixed || '未绑定固定资料条目。')}</pre></section><section class="tsp-character-profile-section"><div class="tsp-character-profile-section-title"><i class="fas fa-rotate"></i> 动态资料</div>${this.dynamicRows(profile.dynamic || {})}</section><div class="tsp-character-profile-entry-info">世界书条目：${h(profile.dynamicEntry?.entryName || '尚未写入')}</div><button class="tsp-character-profile-primary-btn" data-update><i class="fas fa-arrows-rotate"></i> 根据新聊天更新资料</button></div></div>`;
+            const sources = profile.fixedSources?.length ? profile.fixedSources.map(source => `<span class="${source.missing ? 'missing' : ''}">${h(source.bookName)}／${h(source.entryName)}</span>`).join('') : '<span>未读取固定资料条目</span>';
+            this.root.innerHTML = `<div class="tsp-character-profile-view">${this.nav(profile.characterName, '<button class="tsp-character-profile-nav-btn danger" data-delete><i class="fas fa-trash"></i></button>')}<div class="tsp-character-profile-content"><section class="tsp-character-profile-section locked"><div class="tsp-character-profile-section-title"><i class="fas fa-lock"></i> 固定资料</div><div class="tsp-character-profile-source-summary">${sources}</div><pre class="tsp-character-profile-fixed-content">${h(fixed || '未读取固定资料条目。')}</pre></section><section class="tsp-character-profile-section"><div class="tsp-character-profile-section-title"><i class="fas fa-rotate"></i> 动态资料</div>${this.dynamicRows(profile.dynamic || {})}</section><div class="tsp-character-profile-entry-info">读取世界书：${h(profile.sourceWorldbookName || '未记录')}<br>动态条目：${h(profile.dynamicEntry?.entryName || '尚未写入')}</div><button class="tsp-character-profile-primary-btn" data-update><i class="fas fa-arrows-rotate"></i> 根据新聊天更新资料</button></div></div>`;
             this.bindBack(() => this.renderList());
             this.root.querySelector('[data-update]').addEventListener('click', event => this.busy(event.currentTarget, '正在更新…', async () => {
                 await this.service.updateProfile(profileId);

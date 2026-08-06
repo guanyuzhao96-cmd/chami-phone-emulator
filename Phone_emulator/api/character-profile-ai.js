@@ -64,9 +64,11 @@ function normalizeDynamicProfile(value) {
     return normalized;
 }
 
-function extractTaggedPayload(text) {
+function extractTaggedPayload(text, tagName = 'profile_data') {
     const raw = String(text || '').trim();
-    const tagMatch = raw.match(/<profile_data>([\s\S]*?)<\/profile_data>/i);
+    const safeTag = String(tagName).replace(/[^a-z0-9_-]/gi, '');
+    const tagPattern = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, 'i');
+    const tagMatch = raw.match(tagPattern);
     let payload = tagMatch ? tagMatch[1].trim() : raw;
 
     payload = payload
@@ -82,7 +84,7 @@ function extractTaggedPayload(text) {
         if (first >= 0 && last > first) {
             return JSON.parse(payload.slice(first, last + 1));
         }
-        throw new Error('模型没有返回可解析的动态资料JSON。');
+        throw new Error('模型没有返回可解析的JSON。');
     }
 }
 
@@ -101,6 +103,42 @@ function formatMessages(messages) {
     }).filter(Boolean).join('\n\n');
 }
 
+function formatWorldbookEntries(entries, maxChars = 70000) {
+    const blocks = [];
+    let used = 0;
+
+    for (const entry of entries) {
+        const content = String(entry.content || '').trim();
+        if (!content) continue;
+        const block = [
+            `【条目索引：${entry.index}】`,
+            `名称：${entry.name}`,
+            `UID：${entry.uid ?? '无'}`,
+            `启用：${entry.enabled !== false ? '是' : '否'}`,
+            content.slice(0, 6000),
+        ].join('\n');
+        if (used + block.length > maxChars && blocks.length) break;
+        blocks.push(block);
+        used += block.length;
+    }
+
+    return blocks.join('\n\n');
+}
+
+function normalizeSourceSelection(value, entries) {
+    const source = value && typeof value === 'object' ? value : {};
+    const validIndexes = new Set(entries.map(entry => Number(entry.index)));
+    const indexes = [...new Set(
+        (Array.isArray(source.entryIndexes) ? source.entryIndexes : [])
+            .map(item => Number(item))
+            .filter(item => Number.isInteger(item) && validIndexes.has(item)),
+    )];
+    return {
+        aliases: normalizeArray(source.aliases),
+        entryIndexes: indexes,
+    };
+}
+
 export class CharacterProfileAI {
     constructor(context) {
         this.ctx = context;
@@ -114,6 +152,79 @@ export class CharacterProfileAI {
         return helper;
     }
 
+    async selectCharacterSources({
+        characterName,
+        bookName,
+        entries,
+        messages,
+    }) {
+        const helper = this.ensureAvailable();
+        const safeEntries = Array.isArray(entries) ? entries : [];
+        if (!safeEntries.length) throw new Error(`世界书“${bookName}”没有可读取的有效条目。`);
+
+        const prompts = [
+            {
+                role: 'system',
+                content: `你是角色资料来源筛选器。任务是从用户指定的世界书中，找出与目标角色直接相关的固定资料条目。
+规则：
+1. 世界书由用户明确选择，不要求与当前角色卡绑定。
+2. 只选择能说明目标角色身份、背景、外观、性格、能力、关系、经历或明确约束的条目。
+3. 可以选择公共设定条目，但仅限它们会直接约束目标角色时。
+4. 不得把聊天中新发生的动态剧情当成固定资料。
+5. 结合聊天上下文消除同名或别名歧义。
+6. 只输出 <profile_sources> 标签，内部是合法JSON：
+{"aliases":["别名"],"entryIndexes":[0,1]}
+entryIndexes 必须使用给出的“条目索引”，不要返回UID、名称或解释。`,
+            },
+            {
+                role: 'system',
+                content: `【目标角色】\n${characterName}\n\n【用户选择的世界书】\n${bookName}\n\n【世界书条目】\n${formatWorldbookEntries(safeEntries)}`,
+            },
+            {
+                role: 'assistant',
+                content: `【当前聊天上下文】\n${formatMessages(messages) || '(没有可用聊天内容)'}`,
+            },
+            {
+                role: 'user',
+                content: '筛选固定资料来源，只输出 <profile_sources>JSON</profile_sources>。',
+            },
+        ];
+
+        const response = await helper.generateRaw({
+            user_input: '执行角色固定资料来源筛选任务。',
+            max_chat_history: 0,
+            should_stream: false,
+            should_silence: false,
+            ordered_prompts: prompts,
+        });
+
+        const responseText = typeof response === 'string'
+            ? response
+            : response?.content || response?.data || response?.text || '';
+        if (!responseText) throw new Error('模型没有返回固定资料筛选结果。');
+
+        const selected = normalizeSourceSelection(
+            extractTaggedPayload(responseText, 'profile_sources'),
+            safeEntries,
+        );
+
+        if (!selected.entryIndexes.length) {
+            const normalizedName = String(characterName || '').trim().toLowerCase();
+            selected.entryIndexes = safeEntries
+                .filter(entry => (
+                    String(entry.name || '').toLowerCase().includes(normalizedName)
+                    || String(entry.content || '').toLowerCase().includes(normalizedName)
+                ))
+                .map(entry => entry.index);
+        }
+
+        if (!selected.entryIndexes.length) {
+            throw new Error(`在世界书“${bookName}”中没有识别到与“${characterName}”直接相关的条目。`);
+        }
+
+        return selected;
+    }
+
     async generateDynamicProfile({
         characterName,
         fixedContent,
@@ -124,7 +235,7 @@ export class CharacterProfileAI {
         const historyText = formatMessages(messages);
 
         const systemPrompt = `你是角色动态资料维护器。请严格遵守：
-1. “固定资料”来自世界书，是不可修改、不可推翻的事实，只能作为约束。
+1. “固定资料”来自用户选择的世界书，是不可修改、不可推翻的事实，只能作为约束。
 2. 你只能生成“动态资料”，不得复述或改写固定资料。
 3. 结合旧动态资料与新增聊天，输出角色此刻的状态。
 4. 没有明确变化依据的字段保留旧值；不要凭空制造事件、关系或秘密。
@@ -140,7 +251,7 @@ currentRelationships, plotProgress。
             { role: 'system', content: systemPrompt },
             {
                 role: 'system',
-                content: `【目标角色】\n${characterName}\n\n【固定资料·只读】\n${fixedContent || '(未绑定固定世界书条目)'}`,
+                content: `【目标角色】\n${characterName}\n\n【固定资料·只读】\n${fixedContent || '(未读取到固定世界书资料)'}`,
             },
             {
                 role: 'assistant',
@@ -172,7 +283,7 @@ currentRelationships, plotProgress。
             throw new Error('模型返回内容为空。');
         }
 
-        return normalizeDynamicProfile(extractTaggedPayload(responseText));
+        return normalizeDynamicProfile(extractTaggedPayload(responseText, 'profile_data'));
     }
 }
 
