@@ -27,6 +27,7 @@ Object.assign(globalThis, {
   URL: window.URL,
   HTMLElement: window.HTMLElement,
   HTMLInputElement: window.HTMLInputElement,
+  HTMLSelectElement: window.HTMLSelectElement,
   CustomEvent: window.CustomEvent,
   Event: window.Event,
   Node: window.Node,
@@ -114,6 +115,12 @@ if (document.querySelectorAll('.tsp-phone-fab').length !== 1) {
 if (window.ChamiPhoneEmulator.instance !== null) {
   throw new Error('Attached-mode test failed: standalone phone instance should not be created.');
 }
+if (!window.__CHAMI_PHONE_AI_RUNTIME__?.aiRequest || !window.__CHAMI_PHONE_AI_RUNTIME__?.chatStorage) {
+  throw new Error('Attached-mode test failed: shared phone AI runtime was not initialized.');
+}
+if (window.ChamiPhoneEmulator.aiRuntime !== window.__CHAMI_PHONE_AI_RUNTIME__) {
+  throw new Error('Attached-mode test failed: exposed AI runtime does not match the shared runtime.');
+}
 
 window.ChamiPhoneEmulator.open();
 if (originalFabClicks !== 1) {
@@ -130,5 +137,5 @@ if (generationCalls[0].prompt !== '朋友圈测试配图' || generationCalls[0].
 }
 await waitFor(() => document.querySelector('[data-chami-image-preview] img'), 'Attached-mode test failed: generated preview did not render.');
 
-console.log('Attached-mode test passed: add-ons attached to the existing Tavern Scene phone without duplication.');
+console.log('Attached-mode test passed: add-ons and shared phone AI runtime attach without phone duplication.');
 window.close();

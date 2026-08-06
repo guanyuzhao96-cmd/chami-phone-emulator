@@ -1,6 +1,7 @@
 'use strict';
 
 import { PhoneCharacterProfileUI } from '../ui/phone-character-profile.js';
+import { CharacterProfilePresetBridge } from './character-profile-preset-bridge.js';
 
 const instances = new WeakMap();
 let started = false;
@@ -75,16 +76,21 @@ function ensureFallbackLauncher(phoneContainer, ui) {
 async function attachToPhone(phoneContainer) {
     if (!phoneContainer || instances.has(phoneContainer)) return;
 
-    const ui = new PhoneCharacterProfileUI(createContext(), phoneContainer);
+    const context = createContext();
+    const ui = new PhoneCharacterProfileUI(context, phoneContainer);
+    ui.ai.storage = ui.storage;
     instances.set(phoneContainer, ui);
 
-    // 原版手机可能已经停留在聊天或朋友圈页面，没有首页节点。
-    // 先放置常驻入口，再尝试初始化首页图标；即使首页监听失败，入口仍可使用。
     ensureFallbackLauncher(phoneContainer, ui);
 
     try {
         await ui.init();
-        console.log('[角色资料] 已挂载到模拟手机');
+        ui.__presetBridge = new CharacterProfilePresetBridge(
+            phoneContainer,
+            ui.storage,
+            context,
+        ).start();
+        console.log('[角色资料] 已挂载到模拟手机并接入手机AI预设');
     } catch (error) {
         console.warn('[角色资料] 首页图标初始化失败，已保留兼容入口', error);
     }
@@ -111,9 +117,6 @@ function start() {
     window.__TSP_CHARACTER_PROFILE_OBSERVER__ = observer;
 }
 
-// Extension modules may load before or after DOMContentLoaded. The document element is
-// already available in both cases, so start immediately and let MutationObserver catch
-// phone containers that are created later by either the standalone or original plugin.
 start();
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scan, { once: true });
