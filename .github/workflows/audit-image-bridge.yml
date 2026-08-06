@@ -1,0 +1,97 @@
+name: Audit image bridge
+
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-image-bridge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Inspect phone and Tavern Scene image APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          git clone --depth 1 https://github.com/shaochami/chami_tavern-scene-plugin.git "$work/tsp"
+          python - "$work/tsp" <<'PY'
+          from pathlib import Path
+          import hashlib, re, sys
+
+          tsp = Path(sys.argv[1])
+          roots = {
+              'standalone-message': Path('Phone_emulator/ui/phone-message.js'),
+              'standalone-forum': Path('Phone_emulator/ui/phone-forum.js'),
+              'standalone-phone': Path('Phone_emulator/js/phone-emulator.js'),
+              'original-message': tsp / 'Phone_emulator/ui/phone-message.js',
+              'original-forum': tsp / 'Phone_emulator/ui/phone-forum.js',
+              'original-bridge': tsp / 'modules/phone-tsp-bridge.js',
+              'original-image-gen': tsp / 'modules/image-gen.js',
+              'original-index': tsp / 'index.js',
+          }
+          keywords = ['生成图片','图片生成','文生图','朋友圈','消息','image','generate','prompt','tsp','bridge','CustomEvent','dispatchEvent','addEventListener']
+          patterns = {
+              'window globals': r'window\s*(?:\.|\[)[A-Za-z0-9_$\-\"\']+',
+              'custom events': r'(?:CustomEvent|Event)\s*\([^)]{0,160}\)',
+              'dispatch/listen': r'(?:dispatchEvent|addEventListener)\s*\([^)]{0,200}\)',
+              'selectors': r'(?:querySelector(?:All)?|closest|matches)\s*\([^)]{0,220}\)',
+              'ids/classes': r'[\"\'][.#][A-Za-z0-9_:\-\s>.\[\]=\"\']{2,100}[\"\']',
+          }
+          out = ['# Image bridge source audit', '']
+          for name, path in roots.items():
+              out += [f'## {name}', '']
+              if not path.exists():
+                  out += [f'- MISSING: `{path}`', '']
+                  continue
+              raw = path.read_bytes()
+              text = raw.decode('utf-8', 'replace')
+              out += [f'- Path: `{path}`', f'- Size: {len(raw)} bytes', f'- SHA256: `{hashlib.sha256(raw).hexdigest()}`', f'- Lines: {text.count(chr(10))+1}', '']
+              for title, pat in patterns.items():
+                  vals=[]
+                  for m in re.finditer(pat, text, re.I):
+                      v=' '.join(m.group(0).split())[:260]
+                      if v not in vals: vals.append(v)
+                      if len(vals)>=40: break
+                  out += [f'### {title}', '```text', *(vals or ['(none)']), '```', '']
+              out += ['### Keyword contexts', '```text']
+              seen=[]
+              lower=text.lower()
+              for kw in keywords:
+                  start=0
+                  needle=kw.lower()
+                  while True:
+                      i=lower.find(needle,start)
+                      if i<0: break
+                      ctx=' '.join(text[max(0,i-180):min(len(text),i+260)].split())
+                      if ctx not in seen:
+                          seen.append(ctx)
+                          out.append(f'[{kw}] {ctx[:520]}')
+                      if len(seen)>=80: break
+                      start=i+len(needle)
+                  if len(seen)>=80: break
+              if not seen: out.append('(none)')
+              out += ['```','']
+          # Compare phone files to determine whether original image hooks were removed.
+          out += ['## File comparison','']
+          for rel in ['Phone_emulator/ui/phone-message.js','Phone_emulator/ui/phone-forum.js','Phone_emulator/js/phone-emulator.js']:
+              a=Path(rel); b=tsp/rel
+              if a.exists() and b.exists():
+                  out.append(f'- `{rel}`: standalone={hashlib.sha256(a.read_bytes()).hexdigest()} original={hashlib.sha256(b.read_bytes()).hexdigest()} equal={a.read_bytes()==b.read_bytes()}')
+          Path('IMAGE_BRIDGE_AUDIT.md').write_text('\n'.join(out)+'\n',encoding='utf-8')
+          PY
+      - name: Commit audit and remove workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/audit-image-bridge.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: audit Tavern Scene image bridge' || exit 0
+          git push
