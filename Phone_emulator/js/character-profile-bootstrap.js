@@ -3,6 +3,7 @@
 import { PhoneCharacterProfileUI } from '../ui/phone-character-profile.js';
 
 const instances = new WeakMap();
+let started = false;
 
 function showToast(message, type = 'info') {
     const toastr = window.toastr;
@@ -96,14 +97,21 @@ function scan() {
 }
 
 function start() {
+    if (started) {
+        scan();
+        return;
+    }
+    started = true;
     scan();
     const observer = new MutationObserver(scan);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     window.__TSP_CHARACTER_PROFILE_OBSERVER__ = observer;
 }
 
+// Extension modules may load before or after DOMContentLoaded. The document element is
+// already available in both cases, so start immediately and let MutationObserver catch
+// phone containers that are created later by either the standalone or original plugin.
+start();
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
-} else {
-    start();
+    document.addEventListener('DOMContentLoaded', scan, { once: true });
 }
