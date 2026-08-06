@@ -18,60 +18,48 @@ jobs:
           node-version: '20'
       - run: npm install --ignore-scripts
       - run: node tests/generate-stubs.mjs
-      - name: Run UI diagnostic
+      - name: Run resilient UI diagnostic
         shell: bash
         run: |
           cat > tests/runtime-image-audit.mjs <<'EOF'
+          import { writeFileSync } from 'node:fs';
           import { Window } from 'happy-dom';
           import jqueryFactory from 'jquery';
           import 'fake-indexeddb/auto';
-          const window = new Window({ url: 'http://localhost:8000/' });
-          const document = window.document;
-          Object.assign(globalThis,{window,document,navigator:window.navigator,localStorage:window.localStorage,sessionStorage:window.sessionStorage,MutationObserver:window.MutationObserver,ResizeObserver:window.ResizeObserver,XMLHttpRequest:window.XMLHttpRequest,WebSocket:window.WebSocket,HTMLMediaElement:window.HTMLMediaElement,HTMLAudioElement:window.HTMLAudioElement,HTMLImageElement:window.HTMLImageElement,HTMLVideoElement:window.HTMLVideoElement,HTMLCanvasElement:window.HTMLCanvasElement,Audio:window.Audio,Image:window.Image,File:window.File,FileReader:window.FileReader,Blob:window.Blob,URL:window.URL,HTMLElement:window.HTMLElement,HTMLInputElement:window.HTMLInputElement,CustomEvent:window.CustomEvent,Event:window.Event,Node:window.Node,indexedDB:globalThis.indexedDB,IDBKeyRange:globalThis.IDBKeyRange});
-          const $=jqueryFactory(window); globalThis.$=globalThis.jQuery=window.$=window.jQuery=$;
-          const log=[];
-          const eventSource={on(...a){log.push(['eventSource.on',...a.map(String)])},off(){},emit(...a){log.push(['eventSource.emit',...a.map(String)])}};
-          const stContext={name1:'Tester',name2:'Test Character',chatId:'smoke-chat',characterId:0,characters:[{name:'Test Character'}],chat:[{is_user:false,name:'Test Character',mes:'她站在窗边微笑。'}],eventSource};
-          window.SillyTavern=globalThis.SillyTavern={getContext:()=>stContext,getCurrentChatId:()=> 'smoke-chat'};
-          window.toastr=globalThis.toastr={success:m=>log.push(['toast.success',String(m)]),info:m=>log.push(['toast.info',String(m)]),warning:m=>log.push(['toast.warning',String(m)]),error:m=>log.push(['toast.error',String(m)])};
-          window.callPopup=globalThis.callPopup=async (...a)=>{log.push(['callPopup',...a.map(String)]);return null};
-          window.prompt=globalThis.prompt=(...a)=>{log.push(['prompt',...a.map(String)]);return '一名角色站在窗边，电影感光影'};
-          window.confirm=globalThis.confirm=(...a)=>{log.push(['confirm',...a.map(String)]);return true};
-          window.alert=globalThis.alert=(...a)=>log.push(['alert',...a.map(String)]);
-          window.fetch=globalThis.fetch=async (...a)=>{log.push(['fetch',String(a[0])]);return {ok:true,json:async()=>({}),text:async()=>'',blob:async()=>new Blob()}};
-          const nativeDispatch=window.EventTarget.prototype.dispatchEvent;
-          window.EventTarget.prototype.dispatchEvent=function(ev){log.push(['dispatch',ev?.type||'unknown',this?.className||this?.id||this?.tagName||'']);return nativeDispatch.call(this,ev)};
-          function makeGlobal(name){return new Proxy({}, {get(_t,p){if(p==='then') return undefined; return (...args)=>{log.push([`${name}.${String(p)}`,...args.map(x=>typeof x==='string'?x:JSON.stringify(x))]);return Promise.resolve({url:'https://example.test/generated.png',images:['https://example.test/generated.png']})}})}
-          for(const name of ['TavernScenePlugin','TSP','tsp','ChamiTSP','TSPPlugin','tavernScenePlugin']) window[name]=globalThis[name]=makeGlobal(name);
-          await import('../phone-plugin.js');
-          const deadline=Date.now()+12000;
-          while(!window.ChamiPhoneEmulator?.instance && Date.now()<deadline){await new Promise(r=>setTimeout(r,100))}
-          window.ChamiPhoneEmulator?.open?.(); await new Promise(r=>setTimeout(r,300));
           const report=['# Phone image runtime audit',''];
-          function snapshot(title){
-            report.push(`## ${title}`,'');
-            const els=[...document.querySelectorAll('button,[role="button"],input,textarea,[data-action],.tsp-phone-app,.tsp-phone-app-icon')];
-            for(const el of els){const text=(el.textContent||el.value||el.placeholder||'').replace(/\s+/g,' ').trim();const cls=typeof el.className==='string'?el.className:'';if(text||cls||el.id)report.push(`- ${el.tagName} id=${el.id||'-'} class=${cls||'-'} action=${el.dataset?.action||'-'} text=${JSON.stringify(text.slice(0,120))}`)}
-            report.push('');
+          let window;
+          try {
+            window=new Window({url:'http://localhost:8000/'}); const document=window.document;
+            Object.assign(globalThis,{window,document,navigator:window.navigator,localStorage:window.localStorage,sessionStorage:window.sessionStorage,MutationObserver:window.MutationObserver,ResizeObserver:window.ResizeObserver,XMLHttpRequest:window.XMLHttpRequest,WebSocket:window.WebSocket,HTMLMediaElement:window.HTMLMediaElement,HTMLAudioElement:window.HTMLAudioElement,HTMLImageElement:window.HTMLImageElement,HTMLVideoElement:window.HTMLVideoElement,HTMLCanvasElement:window.HTMLCanvasElement,Audio:window.Audio,Image:window.Image,File:window.File,FileReader:window.FileReader,Blob:window.Blob,URL:window.URL,HTMLElement:window.HTMLElement,HTMLInputElement:window.HTMLInputElement,CustomEvent:window.CustomEvent,Event:window.Event,Node:window.Node,indexedDB:globalThis.indexedDB,IDBKeyRange:globalThis.IDBKeyRange});
+            const $=jqueryFactory(window); globalThis.$=globalThis.jQuery=window.$=window.jQuery=$;
+            const eventSource={on(){},off(){},emit(){}};
+            const stContext={name1:'Tester',name2:'Test Character',chatId:'smoke-chat',characterId:0,characters:[{name:'Test Character'}],chat:[{is_user:false,name:'Test Character',mes:'她站在窗边微笑。'}],eventSource};
+            window.SillyTavern=globalThis.SillyTavern={getContext:()=>stContext,getCurrentChatId:()=> 'smoke-chat'};
+            window.toastr=globalThis.toastr={success(){},info(){},warning(){},error(){}};
+            window.callPopup=globalThis.callPopup=async()=>null;
+            window.prompt=globalThis.prompt=()=> '一名角色站在窗边，电影感光影';
+            window.confirm=globalThis.confirm=()=>true; window.alert=globalThis.alert=()=>{};
+            window.fetch=globalThis.fetch=async()=>({ok:true,json:async()=>({}),text:async()=>'',blob:async()=>new Blob()});
+            await import('../phone-plugin.js');
+            const deadline=Date.now()+12000;
+            while(!window.ChamiPhoneEmulator?.instance && Date.now()<deadline){await new Promise(r=>setTimeout(r,100))}
+            report.push('## Initialization','',`- Status: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__||null)}`,`- Instance: ${Boolean(window.ChamiPhoneEmulator?.instance)}`,'');
+            window.ChamiPhoneEmulator?.open?.(); await new Promise(r=>setTimeout(r,500));
+            const elements=[...document.querySelectorAll('button,[role="button"],input,textarea,[data-action],.tsp-phone-app,.tsp-phone-app-icon')];
+            report.push('## Home controls','');
+            for(const el of elements){const text=(el.textContent||el.value||el.placeholder||'').replace(/\s+/g,' ').trim();report.push(`- ${el.tagName} id=${el.id||'-'} class=${typeof el.className==='string'?el.className:'-'} action=${el.dataset?.action||'-'} text=${JSON.stringify(text.slice(0,180))}`)}
+            report.push('','## Text-bearing elements','');
+            for(const el of [...document.querySelectorAll('.tsp-phone-container *')]){const own=[...el.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').replace(/\s+/g,' ').trim();if(own)report.push(`- ${el.tagName}.${typeof el.className==='string'?el.className:''}: ${JSON.stringify(own.slice(0,180))}`)}
+            report.push('','## Missing APIs','```json',JSON.stringify([...(window.__CHAMI_PHONE_MISSING_API_METHODS__||[])],null,2),'```','','## Body','```html',document.body.innerHTML.slice(0,50000),'```');
+          } catch(error) {
+            report.push('','## Diagnostic error','```text',String(error?.stack||error),'```');
+            if(window?.document) report.push('','## Body at failure','```html',window.document.body.innerHTML.slice(0,50000),'```');
+          } finally {
+            writeFileSync('PHONE_IMAGE_RUNTIME_AUDIT.md',report.join('\n'));
+            try{window?.close()}catch{}
           }
-          snapshot('Home');
-          async function clickMatching(label){
-            const all=[...document.querySelectorAll('button,[role="button"],.tsp-phone-app,.tsp-phone-app-icon,div,span')];
-            const el=all.find(x=>(x.textContent||'').replace(/\s+/g,' ').trim()===label) || all.find(x=>(x.textContent||'').includes(label));
-            report.push(`Click ${label}: ${el?`${el.tagName}.${el.className||''}`:'NOT FOUND'}`,'');
-            if(el){el.click(); await new Promise(r=>setTimeout(r,500)); snapshot(`After clicking ${label}`)}
-            return el;
-          }
-          for(const label of ['消息','微信','朋友圈','论坛']) await clickMatching(label);
-          const imgButtons=[...document.querySelectorAll('button,[role="button"],div,span')].filter(x=>/(生成图片|图片生成|文生图)/.test((x.textContent||'').replace(/\s+/g,' ')));
-          report.push('## Image controls','');
-          for(const el of imgButtons) report.push(`- ${el.tagName} id=${el.id||'-'} class=${el.className||'-'} text=${JSON.stringify((el.textContent||'').replace(/\s+/g,' ').trim().slice(0,180))}`);
-          for(const el of imgButtons.slice(0,5)){try{el.click();await new Promise(r=>setTimeout(r,500));snapshot(`After image control ${el.className||el.id||el.tagName}`)}catch(e){log.push(['click-error',String(e?.stack||e)])}}
-          report.push('','## Missing context APIs','```json',JSON.stringify([...(window.__CHAMI_PHONE_MISSING_API_METHODS__||[])],null,2),'```','','## Runtime log','```json',JSON.stringify(log,null,2),'```','','## Final body excerpt','```html',document.body.innerHTML.slice(0,30000),'```');
-          await import('node:fs').then(fs=>fs.writeFileSync('PHONE_IMAGE_RUNTIME_AUDIT.md',report.join('\n')));
-          window.close();
           EOF
-          node --experimental-loader ./tests/st-loader.mjs tests/runtime-image-audit.mjs
+          node --experimental-loader ./tests/st-loader.mjs tests/runtime-image-audit.mjs || true
           rm -f tests/runtime-image-audit.mjs
       - name: Commit report and remove workflow
         shell: bash
@@ -80,5 +68,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'chore: audit phone image runtime' || exit 0
+          git commit -m 'chore: audit phone image runtime result' || exit 0
           git push
