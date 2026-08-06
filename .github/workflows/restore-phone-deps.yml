@@ -1,0 +1,73 @@
+name: Restore phone dependencies
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/load-failure]
+    paths: ['.github/workflows/restore-phone-deps.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/load-failure
+      - name: Restore recursively referenced internal modules
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, urllib.request
+
+          root = pathlib.Path.cwd().resolve()
+          upstream = 'https://raw.githubusercontent.com/shaochami/chami_tavern-scene-plugin/main/'
+          pattern = re.compile(r"(?:import|export)\s*(?:[^;]*?\s*from\s*)?['\"]([^'\"]+\.js)['\"]")
+
+          restored = []
+          for _ in range(10):
+              missing = set()
+              for file in root.rglob('*.js'):
+                  if '.git' in file.parts or 'node_modules' in file.parts or 'tests' in file.parts:
+                      continue
+                  text = file.read_text('utf-8', errors='ignore')
+                  for spec in pattern.findall(text):
+                      if not spec.startswith('.'):
+                          continue
+                      target = (file.parent / spec).resolve()
+                      try:
+                          target.relative_to(root)
+                      except ValueError:
+                          continue
+                      if not target.exists():
+                          missing.add(target)
+              if not missing:
+                  break
+              for target in sorted(missing):
+                  rel = target.relative_to(root).as_posix()
+                  url = upstream + rel
+                  print('restoring', rel)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  try:
+                      data = urllib.request.urlopen(url, timeout=30).read()
+                  except Exception as exc:
+                      raise SystemExit(f'Unable to restore {rel}: {exc}')
+                  target.write_bytes(data)
+                  restored.append(rel)
+          else:
+              raise SystemExit('Dependency restoration did not converge')
+
+          print('Restored:', restored)
+          PY
+      - name: Commit restored dependencies
+        run: |
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo 'No missing dependencies.'
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m 'fix: restore phone runtime dependencies'
+          git push origin HEAD:fix/load-failure
