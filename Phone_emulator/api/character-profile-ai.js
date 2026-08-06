@@ -64,28 +64,152 @@ function normalizeDynamicProfile(value) {
     return normalized;
 }
 
-function extractTaggedPayload(text, tagName = 'profile_data') {
-    const raw = String(text || '').trim();
+function looksLikePayload(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    return Object.prototype.hasOwnProperty.call(value, 'entryIndexes')
+        || Object.prototype.hasOwnProperty.call(value, 'aliases')
+        || DYNAMIC_FIELDS.some(field => Object.prototype.hasOwnProperty.call(value, field));
+}
+
+function unwrapResponseContent(value, seen = new Set()) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) {
+        return value
+            .map(item => unwrapResponseContent(item, seen))
+            .filter(Boolean)
+            .join('\n');
+    }
+    if (typeof value !== 'object' || seen.has(value)) return '';
+    if (looksLikePayload(value)) return JSON.stringify(value);
+
+    seen.add(value);
+
+    const preferred = [
+        value.content,
+        value.text,
+        value.output_text,
+        value.message?.content,
+        value.choices?.[0]?.message?.content,
+        value.choices?.[0]?.text,
+        value.output?.[0]?.content,
+        value.result,
+        value.response,
+        value.data,
+        value.tool_calls?.[0]?.function?.arguments,
+    ];
+
+    for (const candidate of preferred) {
+        const text = unwrapResponseContent(candidate, seen).trim();
+        if (text) return text;
+    }
+
+    return '';
+}
+
+function extractBalancedObjects(text) {
+    const result = [];
+    let start = -1;
+    let depth = 0;
+    let quote = '';
+    let escaped = false;
+
+    for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        if (quote) {
+            if (escaped) {
+                escaped = false;
+            } else if (char === '\\') {
+                escaped = true;
+            } else if (char === quote) {
+                quote = '';
+            }
+            continue;
+        }
+
+        if (char === '"' || char === "'") {
+            quote = char;
+            continue;
+        }
+        if (char === '{') {
+            if (depth === 0) start = index;
+            depth += 1;
+        } else if (char === '}' && depth > 0) {
+            depth -= 1;
+            if (depth === 0 && start >= 0) {
+                result.push(text.slice(start, index + 1));
+                start = -1;
+            }
+        }
+    }
+
+    return result;
+}
+
+function repairJsonCandidate(value) {
+    return String(value || '')
+        .replace(/^\uFEFF/, '')
+        .replace(/^```(?:json|javascript|js)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .replace(/[“”]/g, '"')
+        .replace(/,\s*([}\]])/g, '$1')
+        .trim();
+}
+
+function tryParseCandidate(value) {
+    const candidate = repairJsonCandidate(value);
+    if (!candidate) return null;
+    try {
+        const parsed = JSON.parse(candidate);
+        if (typeof parsed === 'string') {
+            return JSON.parse(repairJsonCandidate(parsed));
+        }
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+function responsePreview(value) {
+    return unwrapResponseContent(value)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 260);
+}
+
+function extractTaggedPayload(response, tagName = 'profile_data') {
+    if (looksLikePayload(response)) return response;
+
+    const raw = unwrapResponseContent(response)
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+        .replace(/<analysis>[\s\S]*?<\/analysis>/gi, '')
+        .trim();
+
     const safeTag = String(tagName).replace(/[^a-z0-9_-]/gi, '');
     const tagPattern = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, 'i');
     const tagMatch = raw.match(tagPattern);
-    let payload = tagMatch ? tagMatch[1].trim() : raw;
+    const candidates = [];
 
-    payload = payload
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/i, '')
-        .trim();
+    if (tagMatch?.[1]) candidates.push(tagMatch[1]);
+    candidates.push(raw);
 
-    try {
-        return JSON.parse(payload);
-    } catch {
-        const first = payload.indexOf('{');
-        const last = payload.lastIndexOf('}');
-        if (first >= 0 && last > first) {
-            return JSON.parse(payload.slice(first, last + 1));
-        }
-        throw new Error('模型没有返回可解析的JSON。');
+    for (const fenced of raw.matchAll(/```(?:json|javascript|js)?\s*([\s\S]*?)```/gi)) {
+        candidates.push(fenced[1]);
     }
+    candidates.push(...extractBalancedObjects(raw));
+
+    for (const candidate of candidates) {
+        const parsed = tryParseCandidate(candidate);
+        if (parsed && typeof parsed === 'object') return parsed;
+    }
+
+    const preview = responsePreview(response);
+    const truncationHint = raw.includes('{') && !raw.includes('}')
+        ? ' 返回内容可能被截断。'
+        : '';
+    throw new Error(`模型没有返回可解析的JSON。${truncationHint}${preview ? ` 返回开头：${preview}` : ''}`);
 }
 
 function formatMessages(messages) {
@@ -103,7 +227,7 @@ function formatMessages(messages) {
     }).filter(Boolean).join('\n\n');
 }
 
-function formatWorldbookEntries(entries, maxChars = 70000) {
+function formatWorldbookEntries(entries, maxChars = 50000) {
     const blocks = [];
     let used = 0;
 
@@ -115,7 +239,7 @@ function formatWorldbookEntries(entries, maxChars = 70000) {
             `名称：${entry.name}`,
             `UID：${entry.uid ?? '无'}`,
             `启用：${entry.enabled !== false ? '是' : '否'}`,
-            content.slice(0, 6000),
+            content.slice(0, 5000),
         ].join('\n');
         if (used + block.length > maxChars && blocks.length) break;
         blocks.push(block);
@@ -198,13 +322,12 @@ entryIndexes 必须使用给出的“条目索引”，不要返回UID、名称�
             ordered_prompts: prompts,
         });
 
-        const responseText = typeof response === 'string'
-            ? response
-            : response?.content || response?.data || response?.text || '';
-        if (!responseText) throw new Error('模型没有返回固定资料筛选结果。');
+        if (!unwrapResponseContent(response).trim() && !looksLikePayload(response)) {
+            throw new Error('模型没有返回固定资料筛选结果。');
+        }
 
         const selected = normalizeSourceSelection(
-            extractTaggedPayload(responseText, 'profile_sources'),
+            extractTaggedPayload(response, 'profile_sources'),
             safeEntries,
         );
 
@@ -275,16 +398,17 @@ currentRelationships, plotProgress。
             ordered_prompts: prompts,
         });
 
-        const responseText = typeof response === 'string'
-            ? response
-            : response?.content || response?.data || response?.text || '';
-
-        if (!responseText) {
+        if (!unwrapResponseContent(response).trim() && !looksLikePayload(response)) {
             throw new Error('模型返回内容为空。');
         }
 
-        return normalizeDynamicProfile(extractTaggedPayload(responseText, 'profile_data'));
+        return normalizeDynamicProfile(extractTaggedPayload(response, 'profile_data'));
     }
 }
 
-export { emptyDynamicProfile, normalizeDynamicProfile };
+export {
+    emptyDynamicProfile,
+    normalizeDynamicProfile,
+    unwrapResponseContent,
+    extractTaggedPayload,
+};
