@@ -1,0 +1,20 @@
+const noop = () => undefined;
+const asyncNoop = async () => undefined;
+const eventSourceValue = { on: noop, off: noop, emit: noop };
+class PopupValue { constructor() {} async show() { return null; } static async show() { return null; } }
+export const chat = [];
+export const checkWorldInfo = noop;
+export const createWorldInfoEntry = asyncNoop;
+export const eventSource = eventSourceValue;
+export const event_types = { CHAT_CHANGED: 'chat_changed', MESSAGE_RECEIVED: 'message_received', MESSAGE_SENT: 'message_sent', CHARACTER_MESSAGE_RENDERED: 'character_message_rendered' };
+export const getRegexedString = noop;
+export const getRequestHeaders = () => ({ 'Content-Type': 'application/json' });
+export const getSortedEntries = () => [];
+export const loadWorldInfo = async () => [];
+export const name1 = noop;
+export const regex_placement = noop;
+export const saveChat = asyncNoop;
+export const saveWorldInfo = asyncNoop;
+export const selected_world_info = noop;
+export const substituteParams = noop;
+export const world_names = noop;
