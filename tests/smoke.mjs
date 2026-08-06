@@ -59,7 +59,7 @@ window.fetch = globalThis.fetch = async () => ({
 await import('../phone-plugin.js');
 
 const deadline = Date.now() + 12000;
-while (!window.ChamiPhoneEmulator?.instance && Date.now() < deadline) {
+while ((!window.ChamiPhoneEmulator?.instance || !document.querySelector('[data-character-profile-app]')) && Date.now() < deadline) {
   if (window.__CHAMI_PHONE_STATUS__?.stage === 'failed') break;
   await new Promise(resolve => setTimeout(resolve, 100));
 }
@@ -74,6 +74,9 @@ if (!window.ChamiPhoneEmulator?.instance) {
 if (window.__CHAMI_PHONE_STATUS__?.stage !== 'ready') {
   throw new Error(`Smoke test failed: initialization did not reach ready.\nStatus: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2)}`);
 }
+if (!document.querySelector('[data-character-profile-app]')) {
+  throw new Error('Smoke test failed: character profile launcher was not created.');
+}
 
-console.log('Smoke test passed: standalone phone initialized and floating button exists.');
+console.log('Smoke test passed: phone and character profile launcher initialized.');
 window.close();
