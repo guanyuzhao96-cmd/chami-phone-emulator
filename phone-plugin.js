@@ -4,11 +4,12 @@ import { pluginContext as legacyContext } from './core/plugin-context.js';
 import { initPhoneEmulator } from './Phone_emulator/index.js';
 
 const PLUGIN_ID = 'chami-phone-emulator';
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const MODULE_NAME = 'phoneEmulator';
 
 let initialized = false;
 let phoneInstance = null;
+let databaseReady = false;
 
 function getSTContext() {
     return window.SillyTavern?.getContext?.() || null;
@@ -22,6 +23,15 @@ function showToast(message, type = 'info') {
     console[type === 'error' ? 'error' : 'log'](`[${PLUGIN_ID}] ${message}`);
 }
 
+async function ensurePhoneDatabase() {
+    if (databaseReady) return;
+    if (!legacyContext?.db || typeof legacyContext.db.init !== 'function') {
+        throw new Error('手机数据库适配器不可用。');
+    }
+    await legacyContext.db.init();
+    databaseReady = true;
+}
+
 function createPhoneContext() {
     const modules = new Map();
 
@@ -29,9 +39,6 @@ function createPhoneContext() {
         PLUGIN_NAME: PLUGIN_ID,
         VERSION,
         version: VERSION,
-
-        // 复用原手机模块一直使用的设置适配器，以兼容已有手机配置和数据。
-        // 不调用 legacyContext.init()，因此不会加载或覆盖酒馆场景插件的全局上下文。
         api: legacyContext.api,
         events: legacyContext.events,
         db: legacyContext.db,
@@ -88,17 +95,21 @@ async function initializeStandalonePhone() {
 
     await waitForSillyTavern();
 
-    // 原酒馆场景插件默认也可能启用手机模块。为了避免双悬浮球，检测到旧实例时停止初始化。
     if (document.querySelector('.tsp-phone-fab')) {
         showToast('检测到另一个模拟手机实例。请在原酒馆场景插件中关闭“手机模拟器”，然后刷新页面。', 'warning');
         return;
     }
 
+    await ensurePhoneDatabase();
+
     const phoneContext = createPhoneContext();
     await initPhoneEmulator(phoneContext);
     phoneInstance = phoneContext.getModule(MODULE_NAME);
 
-    // 手机主体完成后再加载角色资料，确保它绑定到独立手机实例。
+    if (!phoneInstance || !document.querySelector('.tsp-phone-fab')) {
+        throw new Error('手机主体初始化完成，但未创建悬浮按钮。');
+    }
+
     await import('./Phone_emulator/js/character-profile-bootstrap.js');
 
     initialized = true;
