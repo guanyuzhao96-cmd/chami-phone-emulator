@@ -1,0 +1,73 @@
+name: Audit original Tavern Scene public API
+
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-original-tsp-api.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --ignore-scripts
+      - run: node tests/generate-stubs.mjs
+      - name: Load original plugin and inspect globals
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/shaochami/chami_tavern-scene-plugin.git _audit_original
+          cat > tests/original-api-audit.mjs <<'EOF'
+          import { writeFileSync } from 'node:fs';
+          import { Window } from 'happy-dom';
+          import jqueryFactory from 'jquery';
+          import 'fake-indexeddb/auto';
+          const report=['# Original Tavern Scene runtime API audit','']; const calls=[]; let window;
+          try{
+            window=new Window({url:'http://localhost:8000/'}); const document=window.document;
+            Object.assign(globalThis,{window,document,navigator:window.navigator,localStorage:window.localStorage,sessionStorage:window.sessionStorage,MutationObserver:window.MutationObserver,ResizeObserver:window.ResizeObserver,XMLHttpRequest:window.XMLHttpRequest,WebSocket:window.WebSocket,HTMLMediaElement:window.HTMLMediaElement,HTMLAudioElement:window.HTMLAudioElement,HTMLImageElement:window.HTMLImageElement,HTMLVideoElement:window.HTMLVideoElement,HTMLCanvasElement:window.HTMLCanvasElement,Audio:window.Audio,Image:window.Image,File:window.File,FileReader:window.FileReader,Blob:window.Blob,URL:window.URL,HTMLElement:window.HTMLElement,HTMLInputElement:window.HTMLInputElement,CustomEvent:window.CustomEvent,Event:window.Event,Node:window.Node,indexedDB:globalThis.indexedDB,IDBKeyRange:globalThis.IDBKeyRange});
+            const $=jqueryFactory(window); globalThis.$=globalThis.jQuery=window.$=window.jQuery=$;
+            const eventSource={on(...a){calls.push(['event.on',...a.map(String)])},off(){},emit(...a){calls.push(['event.emit',...a.map(String)])}};
+            const stContext={name1:'Tester',name2:'Test Character',chatId:'api-audit',characterId:0,characters:[{name:'Test Character'}],chat:[],eventSource,extensionSettings:{}};
+            window.SillyTavern=globalThis.SillyTavern={getContext:()=>stContext,getCurrentChatId:()=> 'api-audit'};
+            window.toastr=globalThis.toastr={success:m=>calls.push(['success',String(m)]),info:m=>calls.push(['info',String(m)]),warning:m=>calls.push(['warning',String(m)]),error:m=>calls.push(['error',String(m)])};
+            window.callPopup=globalThis.callPopup=async()=>null; window.confirm=globalThis.confirm=()=>true; window.alert=globalThis.alert=()=>{}; window.prompt=globalThis.prompt=()=>'';
+            window.fetch=globalThis.fetch=async(...a)=>{calls.push(['fetch',String(a[0])]);return {ok:true,status:200,json:async()=>({}),text:async()=>'',blob:async()=>new Blob()}};
+            const beforeWindow=new Set(Reflect.ownKeys(window)); const beforeGlobal=new Set(Reflect.ownKeys(globalThis));
+            try{await import('../_audit_original/index.js')}catch(e){report.push('## Import error','```text',String(e?.stack||e),'```','')}
+            await new Promise(r=>setTimeout(r,12000));
+            const newWindow=Reflect.ownKeys(window).filter(k=>!beforeWindow.has(k)); const newGlobal=Reflect.ownKeys(globalThis).filter(k=>!beforeGlobal.has(k));
+            report.push('## New window keys','```json',JSON.stringify(newWindow,null,2),'```','','## New globalThis keys','```json',JSON.stringify(newGlobal,null,2),'```','');
+            function describe(scope,key,value){
+              const type=typeof value; let props=[]; try{props=Reflect.ownKeys(value||{}).map(String)}catch{}
+              const interesting=props.filter(p=>/generate|image|prompt|manager|tsp|api|open|show/i.test(p));
+              if(interesting.length||/tsp|scene|image|chami|generator|plugin/i.test(String(key))){
+                report.push(`### ${scope}.${String(key)}`,'',`- type: ${type}`,`- constructor: ${value?.constructor?.name||'-'}`,`- interesting props: ${JSON.stringify(interesting)}`,'```text',props.slice(0,200).join('\n'),'```','');
+                for(const p of props){let child;try{child=value[p]}catch{continue}if(child&&typeof child==='object'){const cp=[];try{cp.push(...Reflect.ownKeys(child).map(String))}catch{}if(cp.some(x=>/generate|image|prompt|manager/i.test(x)))report.push(`- child ${p}: ${JSON.stringify(cp)}`)}
+              }
+            }
+            for(const key of newWindow)describe('window',key,window[key]);
+            for(const key of newGlobal)describe('globalThis',key,globalThis[key]);
+            for(const key of Reflect.ownKeys(window)){if(!newWindow.includes(key))describe('window-existing',key,window[key])}
+            report.push('## Visible plugin controls','');
+            for(const el of [...document.querySelectorAll('button,[role="button"],[id],[data-action]')]){const text=(el.textContent||el.title||'').replace(/\s+/g,' ').trim();if(/生成|图片|图像|绘图|标签|设置/.test(text)||/tsp/i.test(`${el.id} ${el.className}`))report.push(`- ${el.tagName} id=${el.id||'-'} class=${el.className||'-'} action=${el.dataset?.action||'-'} text=${JSON.stringify(text.slice(0,180))}`)}
+            report.push('','## Calls','```json',JSON.stringify(calls.slice(-300),null,2),'```');
+          }catch(e){report.push('## Fatal error','```text',String(e?.stack||e),'```')}
+          finally{writeFileSync('ORIGINAL_TSP_API_AUDIT.md',report.join('\n'));try{window?.close()}catch{}}
+          EOF
+          node --experimental-loader ./tests/st-loader.mjs tests/original-api-audit.mjs || true
+          rm -rf _audit_original tests/original-api-audit.mjs
+      - name: Commit report and remove workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/audit-original-tsp-api.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore: audit original Tavern Scene API' || exit 0
+          git push
