@@ -44,6 +44,7 @@ const stContext = {
   characterId: 0, characters: [{ name: 'Test Character' }],
   chat: [{ is_user: false, name: 'Test Character', mes: '她站在窗边微笑。' }],
   eventSource,
+  getWorldInfoNames: () => ['Bound Lorebook', 'Unbound Lorebook'],
 };
 window.SillyTavern = globalThis.SillyTavern = {
   getContext: () => stContext,
@@ -135,5 +136,68 @@ await waitFor(
   'Smoke test failed: forum image generation button was not injected.',
 );
 
-console.log('Smoke test passed: phone, character profile, and Tavern Scene image bridge initialized and generated an image.');
+const worldbookReads = [];
+const aiCalls = [];
+const worldbooks = {
+  'Bound Lorebook': [
+    { uid: 1, name: '公共设定', content: '这是当前角色卡绑定的主世界书。', enabled: true },
+  ],
+  'Unbound Lorebook': [
+    { uid: 101, name: 'Test Character', content: 'Test Character 是一名冷静的调查员，黑发，擅长观察。', enabled: true },
+  ],
+};
+window.TavernHelper = globalThis.TavernHelper = {
+  getCharWorldbookNames() {
+    return { primary: 'Bound Lorebook', additional: [] };
+  },
+  async getWorldbook(name) {
+    worldbookReads.push(name);
+    return (worldbooks[name] || []).map(entry => ({ ...entry }));
+  },
+  async updateWorldbookWith(name, updater) {
+    worldbooks[name] = updater((worldbooks[name] || []).map(entry => ({ ...entry })));
+    return worldbooks[name];
+  },
+  async generateRaw(options) {
+    aiCalls.push(options);
+    const promptText = JSON.stringify(options?.ordered_prompts || []);
+    if (promptText.includes('profile_sources')) {
+      return '<profile_sources>{"aliases":["调查员"],"entryIndexes":[0]}</profile_sources>';
+    }
+    return '<profile_data>{"currentStatus":"正在调查","currentLocation":"窗边","currentMood":"冷静","relationshipWithUser":"合作关系","attitudeTowardUser":"信任","currentGoal":"查明真相","currentConflict":"","recentEvents":["观察窗外"],"importantPromises":[],"secretsRevealed":[],"currentAppearance":"黑发，穿深色外套","currentRelationships":[],"plotProgress":"调查开始"}</profile_data>';
+  },
+};
+
+document.querySelector('.tsp-phone-nav-back')?.click();
+await waitFor(() => document.querySelector('.tsp-phone-app-grid'), 'Smoke test failed: could not return from forum.');
+const profileLauncher = document.querySelector('.tsp-phone-app-icon[data-character-profile-app]')
+  || document.querySelector('[data-character-profile-app]');
+profileLauncher.click();
+await waitFor(
+  () => document.querySelector('[data-auto-generate-profile]'),
+  'Smoke test failed: automatic character profile button was not rendered.',
+);
+document.querySelector('[data-auto-generate-profile]').click();
+await waitFor(() => document.querySelector('#cp-auto-book'), 'Smoke test failed: worldbook selection page did not open.');
+
+const bookSelect = document.querySelector('#cp-auto-book');
+const optionValues = [...bookSelect.options].map(option => option.value);
+if (!optionValues.includes('Unbound Lorebook')) {
+  throw new Error(`Smoke test failed: unbound worldbook was not selectable: ${JSON.stringify(optionValues)}`);
+}
+bookSelect.value = 'Unbound Lorebook';
+document.querySelector('[data-auto-submit]').click();
+
+await waitFor(
+  () => document.querySelector('.tsp-character-profile-entry-info')?.textContent.includes('Unbound Lorebook'),
+  'Smoke test failed: automatic profile was not generated from the selected unbound worldbook.',
+);
+if (!worldbookReads.includes('Unbound Lorebook')) {
+  throw new Error(`Smoke test failed: selected unbound worldbook was not read: ${JSON.stringify(worldbookReads)}`);
+}
+if (aiCalls.length < 2) {
+  throw new Error(`Smoke test failed: expected source selection and dynamic profile generation calls, got ${aiCalls.length}.`);
+}
+
+console.log('Smoke test passed: image bridge and selectable-worldbook automatic character profile generation work.');
 window.close();
