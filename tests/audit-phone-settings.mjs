@@ -37,6 +37,11 @@ window.TavernHelper = globalThis.TavernHelper = {
   async generate() { return '{}'; },
 };
 
+const report = [];
+const emit = (...parts) => report.push(parts.map(part => (
+  typeof part === 'string' ? part : JSON.stringify(part, null, 2)
+)).join(' '));
+
 function describe(value, depth = 0, seen = new Set()) {
   if (value === null) return null;
   if (value === undefined) return '[undefined]';
@@ -52,28 +57,26 @@ function describe(value, depth = 0, seen = new Set()) {
     };
   }
   if (typeof value !== 'object') {
-    return typeof value === 'string' && value.length > 500 ? `${value.slice(0, 500)}…` : value;
+    return typeof value === 'string' && value.length > 1000 ? `${value.slice(0, 1000)}…` : value;
   }
   if (seen.has(value)) return '[circular]';
-  if (depth > 4) return `[${Array.isArray(value) ? 'array' : 'object'}:${Object.keys(value).length}]`;
+  if (depth > 5) return `[${Array.isArray(value) ? 'array' : 'object'}:${Object.keys(value).length}]`;
   seen.add(value);
-  if (Array.isArray(value)) return value.slice(0, 20).map(item => describe(item, depth + 1, seen));
+  if (Array.isArray(value)) return value.slice(0, 30).map(item => describe(item, depth + 1, seen));
   const out = {};
-  for (const key of Object.keys(value).slice(0, 80)) out[key] = describe(value[key], depth + 1, seen);
+  for (const key of Object.keys(value).slice(0, 120)) out[key] = describe(value[key], depth + 1, seen);
   return out;
 }
 
 async function inspectModule(label, specifier) {
-  console.log(`\n=== ${label} ===`);
+  emit(`\n=== ${label} ===`);
   try {
     const mod = await import(specifier);
-    console.log('EXPORTS', Object.keys(mod));
-    for (const [name, value] of Object.entries(mod)) {
-      console.log(`EXPORT ${name}`, JSON.stringify(describe(value), null, 2));
-    }
+    emit('EXPORTS', Object.keys(mod));
+    for (const [name, value] of Object.entries(mod)) emit(`EXPORT ${name}`, describe(value));
     return mod;
   } catch (error) {
-    console.log('IMPORT_FAILED', error?.stack || String(error));
+    emit('IMPORT_FAILED', error?.stack || String(error));
     return null;
   }
 }
@@ -83,29 +86,35 @@ const config = await inspectModule('PHONE CONFIG', '../Phone_emulator/config.js'
 const apiConfig = await inspectModule('API CONFIG SERVICE', '../Phone_emulator/services/api-config.js');
 const enhancer = await inspectModule('SYSTEM PROMPT ENHANCER', '../Phone_emulator/utils/system-prompt-enhancer.js');
 const ai = await inspectModule('AI REQUEST', '../Phone_emulator/api/ai-request.js');
-await inspectModule('PHONE SETTINGS UI', '../Phone_emulator/ui/phone-settings.js');
+const settings = await inspectModule('PHONE SETTINGS UI', '../Phone_emulator/ui/phone-settings.js');
 
 if (ai) {
   for (const name of ['getDefaultGenerator', 'getOptionalGenerator', 'initializeGenerator']) {
     const fn = ai[name];
     if (typeof fn !== 'function') continue;
-    console.log(`\nCALL ${name} arity=${fn.length}`);
+    emit(`\nCALL ${name} arity=${fn.length}`);
     for (const args of [[], ['characterProfile'], ['chat'], ['moments']]) {
       try {
         const result = await fn(...args);
-        console.log('ARGS', JSON.stringify(args), 'RESULT', JSON.stringify(describe(result), null, 2));
+        emit('ARGS', args, 'RESULT', describe(result));
       } catch (error) {
-        console.log('ARGS', JSON.stringify(args), 'ERROR', error?.message || String(error));
+        emit('ARGS', args, 'ERROR', error?.stack || error?.message || String(error));
       }
     }
   }
 }
 
-console.log('\n=== STORAGE SNAPSHOT ===');
+emit('\n=== LOCAL STORAGE ===');
 for (let i = 0; i < localStorage.length; i += 1) {
   const key = localStorage.key(i);
-  console.log(key, localStorage.getItem(key)?.slice(0, 2000));
+  emit(key, localStorage.getItem(key)?.slice(0, 4000));
 }
 
-console.log('\nAUDIT_COMPLETE');
+emit('\n=== GLOBAL CANDIDATES ===');
+for (const key of Object.keys(window).filter(key => /preset|generator|phone|api/i.test(key)).slice(0, 100)) {
+  emit(key, describe(window[key]));
+}
+
+emit('\nAUDIT_COMPLETE');
+process.stdout.write(`${report.join('\n')}\n`);
 window.close();
