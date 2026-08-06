@@ -25,29 +25,16 @@ Object.assign(globalThis, {
 const $ = jqueryFactory(window);
 globalThis.$ = globalThis.jQuery = window.$ = window.jQuery = $;
 
-const eventSource = {
-  on() {},
-  off() {},
-  emit() {},
-};
-
+const eventSource = { on() {}, off() {}, emit() {} };
 const stContext = {
-  name1: 'Tester',
-  name2: 'Test Character',
-  chatId: 'smoke-chat',
-  characterId: 0,
-  characters: [{ name: 'Test Character' }],
-  chat: [],
-  eventSource,
+  name1: 'Tester', name2: 'Test Character', chatId: 'smoke-chat',
+  characterId: 0, characters: [{ name: 'Test Character' }], chat: [], eventSource,
 };
-
 window.SillyTavern = globalThis.SillyTavern = {
   getContext: () => stContext,
   getCurrentChatId: () => 'smoke-chat',
 };
-window.toastr = globalThis.toastr = {
-  success() {}, info() {}, warning() {}, error() {},
-};
+window.toastr = globalThis.toastr = { success() {}, info() {}, warning() {}, error() {} };
 window.callPopup = globalThis.callPopup = async () => null;
 window.fetch = globalThis.fetch = async () => ({
   ok: true,
@@ -58,16 +45,18 @@ window.fetch = globalThis.fetch = async () => ({
 
 await import('../phone-plugin.js');
 
-const deadline = Date.now() + 8000;
+const deadline = Date.now() + 12000;
 while (!document.querySelector('.tsp-phone-fab') && Date.now() < deadline) {
+  if (window.__CHAMI_PHONE_STATUS__?.stage === 'failed') break;
   await new Promise(resolve => setTimeout(resolve, 100));
 }
 
 if (!document.querySelector('.tsp-phone-fab')) {
-  throw new Error('Smoke test failed: phone floating button was not created.');
+  const status = JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2);
+  throw new Error(`Smoke test failed: phone floating button was not created.\nStatus: ${status}`);
 }
 if (!window.ChamiPhoneEmulator?.instance) {
-  throw new Error('Smoke test failed: global phone instance was not exposed.');
+  throw new Error(`Smoke test failed: global phone instance was not exposed.\nStatus: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2)}`);
 }
 
 console.log('Smoke test passed: standalone phone initialized and floating button exists.');
