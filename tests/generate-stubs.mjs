@@ -58,13 +58,38 @@ const lines = [
   'const noop = () => undefined;',
   'const asyncNoop = async () => undefined;',
   'const eventSourceValue = { on: noop, off: noop, emit: noop };',
+  'class PopupValue { constructor() {} async show() { return null; } static async show() { return null; } }',
 ];
+
+const explicitValues = {
+  Popup: 'PopupValue',
+  PopupType: "{ TEXT: 'text', CONFIRM: 'confirm', INPUT: 'input' }",
+  characters: '[]',
+  chat: '[]',
+  eventSource: 'eventSourceValue',
+  event_types: "{ CHAT_CHANGED: 'chat_changed', MESSAGE_RECEIVED: 'message_received', MESSAGE_SENT: 'message_sent', CHARACTER_MESSAGE_RENDERED: 'character_message_rendered' }",
+  extension_settings: '{}',
+  generateRaw: "async () => '<profile_data>{}</profile_data>'",
+  getRequestHeaders: "() => ({ 'Content-Type': 'application/json' })",
+  getSortedEntries: '() => []',
+  getThumbnailUrl: "() => ''",
+  getWorldInfoPrompt: "async () => ({ worldInfoBefore: '', worldInfoAfter: '', worldInfoString: '' })",
+  loadWorldInfo: 'async () => []',
+  openCharacterWorldInfoEditor: 'asyncNoop',
+  saveChatConditional: 'asyncNoop',
+  saveSettingsDebounced: 'noop',
+};
+
 for (const name of [...names].sort()) {
-  let value = 'noop';
-  if (/eventSource/i.test(name)) value = 'eventSourceValue';
-  else if (/event_types/i.test(name)) value = '{}';
-  else if (/save|load|fetch|generate|update|delete|create|write|read|send|open|close|refresh|reload/i.test(name)) value = 'asyncNoop';
-  else if (/^(chat|characters|groups|extension_settings|power_user|settings)$/i.test(name)) value = '[]';
+  let value = explicitValues[name];
+  if (!value) {
+    value = 'noop';
+    if (/eventSource/i.test(name)) value = 'eventSourceValue';
+    else if (/event_types/i.test(name)) value = '{}';
+    else if (/save|load|fetch|generate|update|delete|create|write|read|send|open|close|refresh|reload/i.test(name)) value = 'asyncNoop';
+    else if (/^(chat|characters|groups)$/i.test(name)) value = '[]';
+    else if (/settings|power_user/i.test(name)) value = '{}';
+  }
   lines.push(`export const ${name} = ${value};`);
 }
 if (needsDefault) lines.push('export default {};');
