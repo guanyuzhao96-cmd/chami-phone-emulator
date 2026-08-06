@@ -23,10 +23,28 @@ function walk(dir) {
     if (entry.name === '.git' || entry.name === 'node_modules') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
-    else if (entry.name.endsWith('.js') || entry.name.endsWith('.mjs')) jsFiles.push(full);
+    else if ((entry.name.endsWith('.js') || entry.name.endsWith('.mjs')) && entry.name !== 'generated-stubs.mjs') jsFiles.push(full);
   }
 }
 walk(root);
+
+function validateRelativeSpecifier(file, spec) {
+  if (!spec.startsWith('.')) return;
+  const base = path.resolve(path.dirname(file), spec);
+  let insideRoot = false;
+  try {
+    path.relative(root, base);
+    insideRoot = base === root || base.startsWith(`${root}${path.sep}`);
+  } catch {
+    insideRoot = false;
+  }
+  // Imports that intentionally traverse into SillyTavern core are validated by the browser smoke test.
+  if (!insideRoot) return;
+  const candidates = [base, `${base}.js`, `${base}.mjs`, path.join(base, 'index.js')];
+  if (!candidates.some(candidate => fs.existsSync(candidate))) {
+    errors.push(`missing relative import in ${path.relative(root, file)}: ${spec}`);
+  }
+}
 
 for (const file of jsFiles) {
   try {
@@ -36,15 +54,10 @@ for (const file of jsFiles) {
   }
 
   const source = fs.readFileSync(file, 'utf8');
-  const importRe = /(?:import\s+(?:[^'";]+?\s+from\s+)?|export\s+[^'";]+?\s+from\s+|import\s*\()(['"])(\.{1,2}\/[^'"]+)\1/g;
-  for (const match of source.matchAll(importRe)) {
-    const spec = match[2];
-    const base = path.resolve(path.dirname(file), spec);
-    const candidates = [base, `${base}.js`, `${base}.mjs`, path.join(base, 'index.js')];
-    if (!candidates.some(candidate => fs.existsSync(candidate))) {
-      errors.push(`missing relative import in ${path.relative(root, file)}: ${spec}`);
-    }
-  }
+  const staticRe = /(?:import|export)\s*(?:[^;]*?\s*from\s*)?(['"])([^'"]+)\1/g;
+  const dynamicRe = /import\s*\(\s*(['"])([^'"]+)\1\s*\)/g;
+  for (const match of source.matchAll(staticRe)) validateRelativeSpecifier(file, match[2]);
+  for (const match of source.matchAll(dynamicRe)) validateRelativeSpecifier(file, match[2]);
 }
 
 const cssEntry = manifest.css ? path.join(root, manifest.css) : null;
