@@ -1,9 +1,24 @@
 'use strict';
 
+import { world_names } from '../../../../../world-info.js';
+
 const DEFAULT_RENDER_MODE = 'debounced';
 
 function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeNameList(value) {
+    if (Array.isArray(value)) {
+        return value.map(item => String(item || '').trim()).filter(Boolean);
+    }
+    if (value && typeof value === 'object') {
+        if (Array.isArray(value.names)) return normalizeNameList(value.names);
+        if (Array.isArray(value.worldInfoNames)) return normalizeNameList(value.worldInfoNames);
+        if (Array.isArray(value.world_names)) return normalizeNameList(value.world_names);
+        return Object.keys(value).filter(key => value[key] !== false);
+    }
+    return [];
 }
 
 export class PhoneWorldbookService {
@@ -35,6 +50,38 @@ export class PhoneWorldbookService {
         return { primary, additional };
     }
 
+    async getAllWorldbookNames() {
+        const helper = this.ensureAvailable();
+        const context = window.SillyTavern?.getContext?.();
+        const names = [];
+
+        const providers = [
+            () => context?.getWorldInfoNames?.(),
+            () => window.SillyTavern?.getWorldInfoNames?.(),
+            () => helper.getWorldInfoNames?.(),
+            () => helper.getWorldbookNames?.(),
+        ];
+
+        for (const provider of providers) {
+            try {
+                const value = await Promise.resolve(provider());
+                names.push(...normalizeNameList(value));
+            } catch (error) {
+                this.ctx?.warn?.('character-profile', '枚举世界书失败，继续使用兼容来源', error);
+            }
+        }
+
+        if (Array.isArray(world_names)) {
+            names.push(...world_names.map(item => String(item || '').trim()).filter(Boolean));
+        }
+
+        const current = this.getCurrentWorldbookNames();
+        names.push(current.primary, ...current.additional);
+
+        return [...new Set(names.filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+    }
+
     getDefaultWorldbookName() {
         const names = this.getCurrentWorldbookNames();
         return names.primary || names.additional[0] || null;
@@ -47,23 +94,31 @@ export class PhoneWorldbookService {
         return Array.isArray(entries) ? entries : [];
     }
 
+    async getNormalizedEntries(bookName) {
+        const entries = await this.getEntries(bookName);
+        return entries
+            .map((entry, index) => ({
+                bookName,
+                index,
+                uid: entry.uid ?? null,
+                name: entry.name || entry.comment || `未命名条目 ${index + 1}`,
+                content: typeof entry.content === 'string' ? entry.content : '',
+                enabled: entry.enabled !== false,
+                raw: entry,
+            }))
+            .filter(item => (
+                item.content.trim()
+                && !item.content.includes('<!-- TSP_PROFILE_ID:')
+            ));
+    }
+
     async getAllCurrentEntries() {
         const names = this.getCurrentWorldbookNames();
         const bookNames = [names.primary, ...names.additional].filter(Boolean);
         const result = [];
 
         for (const bookName of [...new Set(bookNames)]) {
-            const entries = await this.getEntries(bookName);
-            for (const entry of entries) {
-                result.push({
-                    bookName,
-                    uid: entry.uid ?? null,
-                    name: entry.name || entry.comment || '未命名条目',
-                    content: typeof entry.content === 'string' ? entry.content : '',
-                    enabled: entry.enabled !== false,
-                    raw: entry,
-                });
-            }
+            result.push(...await this.getNormalizedEntries(bookName));
         }
 
         return result;
@@ -71,7 +126,7 @@ export class PhoneWorldbookService {
 
     async updateEntries(bookName, updater, renderMode = DEFAULT_RENDER_MODE) {
         this.ensureAvailable();
-        if (!bookName) throw new Error('当前角色卡没有绑定世界书。');
+        if (!bookName) throw new Error('没有指定用于写入的世界书。');
 
         const run = async () => this.helper.updateWorldbookWith(
             bookName,
@@ -156,8 +211,13 @@ export class PhoneWorldbookService {
             profile.profileId,
             profile.dynamicEntry?.bookName,
         );
-        const bookName = existing?.bookName || this.getDefaultWorldbookName();
-        if (!bookName) throw new Error('当前角色卡没有绑定世界书，无法写入动态资料。');
+        const bookName = existing?.bookName
+            || profile.outputWorldbookName
+            || this.getDefaultWorldbookName()
+            || profile.sourceWorldbookName;
+        if (!bookName) {
+            throw new Error('没有可用于写入动态资料的世界书。请先绑定主世界书，或在自动生成时选择一本世界书。');
+        }
 
         const aliases = Array.isArray(profile.aliases) ? profile.aliases : [];
         const keys = [...new Set([profile.characterName, ...aliases].map(v => String(v || '').trim()).filter(Boolean))];
