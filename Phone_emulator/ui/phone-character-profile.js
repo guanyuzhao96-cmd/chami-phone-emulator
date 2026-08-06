@@ -26,10 +26,13 @@ export class PhoneCharacterProfileUI {
         await this.storage.init();
         this.injectIcon();
         this.observer = new MutationObserver(() => this.injectIcon());
-        this.observer.observe(this.home, { childList: true, subtree: true });
+        // The original Tavern Scene phone replaces the home screen while an app is open.
+        // Observe the whole phone so the icon is injected whenever the home grid returns.
+        this.observer.observe(this.phoneContainer, { childList: true, subtree: true });
     }
 
     injectIcon() {
+        this.home = this.phoneContainer.querySelector('#tsp-phone-home-screen') || this.home;
         const grid = this.home?.querySelector('.tsp-phone-app-grid');
         if (!grid || grid.querySelector('[data-character-profile-app]')) return;
         const icon = document.createElement('div');
@@ -217,15 +220,10 @@ export class PhoneCharacterProfileUI {
                     overlapMessages: Number(this.root.querySelector('#cp-overlap').value) || 5,
                 });
                 this.toast('角色资料设置已保存', 'success');
-                await this.renderList();
+                await this.renderSettings();
             }));
         } catch (error) {
             this.error(error, () => this.renderList());
         }
-    }
-
-    cleanup() {
-        this.close();
-        this.observer?.disconnect();
     }
 }
