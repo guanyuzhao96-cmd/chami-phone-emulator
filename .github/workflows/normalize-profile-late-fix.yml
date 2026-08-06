@@ -1,0 +1,55 @@
+name: Normalize delayed profile fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/normalize-profile-late-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/tavern-scene-image-bridge
+      - name: Restore unrelated profile behavior
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('Phone_emulator/ui/phone-character-profile.js')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace("                await this.renderSettings();\n", "                await this.renderList();\n", 1)
+          closing = """        } catch (error) {
+            this.error(error, () => this.renderList());
+        }
+    }
+}
+"""
+          replacement = """        } catch (error) {
+            this.error(error, () => this.renderList());
+        }
+    }
+
+    cleanup() {
+        this.close();
+        this.observer?.disconnect();
+    }
+}
+"""
+          if closing not in text:
+              raise SystemExit('class closing block not found')
+          path.write_text(text.replace(closing, replacement, 1), encoding='utf-8')
+          PY
+          rm -f .github/workflows/normalize-profile-late-fix.yml
+      - name: Commit normalized fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: preserve profile cleanup and settings flow'
+          git push origin HEAD:feat/tavern-scene-image-bridge
