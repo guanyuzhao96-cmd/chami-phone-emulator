@@ -13,6 +13,7 @@ Object.assign(globalThis, {
   sessionStorage: window.sessionStorage,
   MutationObserver: window.MutationObserver,
   ResizeObserver: window.ResizeObserver,
+  XMLHttpRequest: window.XMLHttpRequest,
   HTMLElement: window.HTMLElement,
   HTMLInputElement: window.HTMLInputElement,
   CustomEvent: window.CustomEvent,
@@ -46,7 +47,7 @@ window.fetch = globalThis.fetch = async () => ({
 await import('../phone-plugin.js');
 
 const deadline = Date.now() + 12000;
-while (!document.querySelector('.tsp-phone-fab') && Date.now() < deadline) {
+while (!window.ChamiPhoneEmulator?.instance && Date.now() < deadline) {
   if (window.__CHAMI_PHONE_STATUS__?.stage === 'failed') break;
   await new Promise(resolve => setTimeout(resolve, 100));
 }
@@ -57,6 +58,9 @@ if (!document.querySelector('.tsp-phone-fab')) {
 }
 if (!window.ChamiPhoneEmulator?.instance) {
   throw new Error(`Smoke test failed: global phone instance was not exposed.\nStatus: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2)}`);
+}
+if (window.__CHAMI_PHONE_STATUS__?.stage !== 'ready') {
+  throw new Error(`Smoke test failed: initialization did not reach ready.\nStatus: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2)}`);
 }
 
 console.log('Smoke test passed: standalone phone initialized and floating button exists.');
