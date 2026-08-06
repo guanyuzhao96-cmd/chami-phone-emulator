@@ -6,6 +6,7 @@ import { initPhoneEmulator } from './Phone_emulator/index.js';
 const PLUGIN_ID = 'chami-phone-emulator';
 const VERSION = '1.0.1';
 const MODULE_NAME = 'phoneEmulator';
+const STORAGE_PREFIX = 'chami_phone_fallback:';
 
 let initialized = false;
 let phoneInstance = null;
@@ -15,6 +16,7 @@ function setStatus(stage, error = null) {
     window.__CHAMI_PHONE_STATUS__ = {
         stage,
         error: error ? String(error?.stack || error?.message || error) : null,
+        missingApiMethods: [...(window.__CHAMI_PHONE_MISSING_API_METHODS__ || [])],
         timestamp: Date.now(),
     };
 }
@@ -29,6 +31,55 @@ function showToast(message, type = 'info') {
         return;
     }
     console[type === 'error' ? 'error' : 'log'](`[${PLUGIN_ID}] ${message}`);
+}
+
+function fallbackStorageKey(method, args) {
+    const logicalKey = args.length ? String(args[0]) : 'default';
+    return `${STORAGE_PREFIX}${method}:${logicalKey}`;
+}
+
+function createFallbackMethod(method) {
+    return async (...args) => {
+        const name = String(method);
+        const key = fallbackStorageKey(name, args);
+
+        if (/^(get|load|read)/i.test(name)) {
+            const fallback = args.length > 1 ? args[1] : null;
+            try {
+                const raw = localStorage.getItem(key);
+                return raw === null ? fallback : JSON.parse(raw);
+            } catch {
+                return fallback;
+            }
+        }
+
+        if (/^(delete|remove|clear)/i.test(name)) {
+            localStorage.removeItem(key);
+            return true;
+        }
+
+        if (/^(set|save|write|update|create)/i.test(name)) {
+            const value = args.length > 1 ? args[1] : args[0];
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        }
+
+        return null;
+    };
+}
+
+function createCompatibleApi(api) {
+    const missing = window.__CHAMI_PHONE_MISSING_API_METHODS__ = new Set();
+    return new Proxy(api || {}, {
+        get(target, property, receiver) {
+            const value = Reflect.get(target, property, receiver);
+            if (typeof value === 'function') return value.bind(target);
+            if (value !== undefined && value !== null) return value;
+            if (typeof property !== 'string') return value;
+            missing.add(property);
+            return createFallbackMethod(property);
+        },
+    });
 }
 
 async function ensurePhoneContext() {
@@ -53,12 +104,13 @@ async function ensurePhoneContext() {
 
 function createPhoneContext() {
     const modules = new Map();
+    const compatibleApi = createCompatibleApi(legacyContext.api);
 
     return {
         PLUGIN_NAME: PLUGIN_ID,
         VERSION,
         version: VERSION,
-        api: legacyContext.api,
+        api: compatibleApi,
         events: legacyContext.events,
         db: legacyContext.db,
         helpers: { ...legacyContext.helpers, showToast },
