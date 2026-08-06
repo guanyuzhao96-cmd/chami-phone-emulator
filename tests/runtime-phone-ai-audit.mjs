@@ -52,45 +52,87 @@ async function waitFor(predicate, message, timeoutMs = 15000) {
   if (!predicate()) throw new Error(`${message}\n${JSON.stringify(window.__CHAMI_PHONE_STATUS__ || null, null, 2)}`);
 }
 
-function describe(value) {
-  const proto = value ? Object.getPrototypeOf(value) : null;
-  return {
-    constructor: value?.constructor?.name || null,
-    keys: value ? Object.keys(value) : [],
-    methods: proto ? Object.getOwnPropertyNames(proto)
-      .filter(name => name !== 'constructor')
-      .map(name => ({
-        name,
-        arity: typeof value[name] === 'function' ? value[name].length : null,
-        type: typeof value[name],
-      })) : [],
-  };
+function safe(value, max = 12000) {
+  try {
+    const text = JSON.stringify(value, (_key, item) => typeof item === 'function' ? `[Function ${item.name || 'anonymous'}]` : item, 2);
+    return text.length > max ? `${text.slice(0, max)}…` : text;
+  } catch (error) {
+    return `[unserializable: ${error.message}]`;
+  }
 }
 
-const report = { error: null };
+async function attempt(label, task, target) {
+  try {
+    target[label] = safe(await task());
+  } catch (error) {
+    target[label] = `ERROR: ${error?.message || error}`;
+  }
+}
+
+const report = { error: null, featureConfigs: {}, presetOutputs: {}, highLevelCaptures: [] };
 try {
   await import('../phone-plugin.js');
   await waitFor(() => window.ChamiPhoneEmulator?.instance?.aiRequest, 'Phone instance did not initialize.');
   const phone = window.ChamiPhoneEmulator.instance;
-  report.phone = describe(phone);
-  report.aiRequest = describe(phone.aiRequest);
-  report.aiPreset = describe(phone.aiRequest?.preset);
-  report.chatStorage = describe(phone.chatStorage);
-  report.settingsUI = describe(phone.settingsUI);
-  report.minutesUI = describe(phone.minutesUI);
-  report.aiValues = Object.fromEntries(Object.keys(phone.aiRequest || {}).map(key => {
-    const value = phone.aiRequest[key];
-    return [key, value === null || ['string', 'number', 'boolean'].includes(typeof value)
-      ? value
-      : { constructor: value?.constructor?.name || typeof value, keys: Object.keys(value || {}) }];
-  }));
+  const ai = phone.aiRequest;
+  const storage = phone.chatStorage;
+  const preset = ai.preset;
+
+  await attempt('featurePresetMapping', () => storage.getFeaturePresetMapping(), report);
+  await attempt('apiConfigs', () => storage.getAllAPIConfigs(), report);
+  for (const feature of ['chat', 'moments', 'forum', 'chatSummary', 'minutes', 'characterUpdate', 'characterProfile']) {
+    await attempt(feature, () => ai._getFeatureConfig(feature), report.featureConfigs);
+  }
+
+  const presetCalls = {
+    characterUpdate: () => preset._getCharacterUpdateMessages(
+      { name: 'Test Character', currentStatus: '旧状态' },
+      { chat: '最新聊天', fixed: '固定资料' },
+    ),
+    chatSummary: () => preset._getChatSummaryMessages(),
+    mapGeneration: () => preset._getMapGenerationMessages(),
+    newFriends: () => preset._getNewFriendsGenerationMessages(),
+    moments: () => preset._getMomentsMessages(),
+    forum: () => preset._getForumMessages(),
+  };
+  for (const [label, task] of Object.entries(presetCalls)) {
+    await attempt(label, task, report.presetOutputs);
+  }
+
+  const originalRequest = ai.request.bind(ai);
+  const originalSendRequest = ai.sendRequest.bind(ai);
+  ai.request = async options => {
+    report.highLevelCaptures.push({ method: 'request', options: safe(options) });
+    return '{"ok":true,"characters":[],"relationships":[]}';
+  };
+  ai.sendRequest = async options => {
+    report.highLevelCaptures.push({ method: 'sendRequest', options: safe(options) });
+    return '{"ok":true,"characters":[],"relationships":[]}';
+  };
+
+  const calls = [
+    ['sendCharacterUpdateRequest', () => ai.sendCharacterUpdateRequest(
+      { name: 'Test Character', currentStatus: '旧状态' },
+      { chat: '最新聊天', fixed: '固定资料' },
+    )],
+    ['sendChatSummaryRequest', () => ai.sendChatSummaryRequest([], { summary: '旧总结' })],
+    ['sendMapRequest', () => ai.sendMapRequest({ text: '生成地图' })],
+    ['sendNewFriendsRequest', () => ai.sendNewFriendsRequest({ text: '生成好友' })],
+  ];
+  report.highLevelErrors = {};
+  for (const [label, task] of calls) {
+    try { await task(); } catch (error) { report.highLevelErrors[label] = error?.message || String(error); }
+  }
+  ai.request = originalRequest;
+  ai.sendRequest = originalSendRequest;
 
   window.ChamiPhoneEmulator.open();
-  await waitFor(() => document.querySelector('[data-app="settings"]'), 'Settings app icon not found.');
-  document.querySelector('[data-app="settings"]').click();
-  await new Promise(resolve => setTimeout(resolve, 500));
-  report.settingsText = (document.querySelector('.tsp-phone-screen')?.textContent || '')
+  await waitFor(() => phone.settingsUI?.renderFeaturePresetView, 'Settings UI unavailable.');
+  await phone.settingsUI.renderFeaturePresetView();
+  await new Promise(resolve => setTimeout(resolve, 300));
+  report.featurePresetText = (document.querySelector('.tsp-phone-screen')?.textContent || '')
     .replace(/\s+/g, ' ').trim().slice(0, 16000);
+  report.featurePresetHtml = (document.querySelector('.tsp-phone-screen')?.innerHTML || '').slice(0, 30000);
   report.selects = [...document.querySelectorAll('select')].map(select => ({
     id: select.id,
     name: select.name,
