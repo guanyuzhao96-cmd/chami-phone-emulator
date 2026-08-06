@@ -1,0 +1,47 @@
+name: Fix attached character profile
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-attached-character-profile.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/tavern-scene-image-bridge
+      - name: Make home observer optional
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('Phone_emulator/ui/phone-character-profile.js')
+          text = path.read_text(encoding='utf-8')
+          old = """        this.injectIcon();
+        this.observer = new MutationObserver(() => this.injectIcon());
+        this.observer.observe(this.home, { childList: true, subtree: true });
+"""
+          new = """        this.injectIcon();
+        if (this.home) {
+            this.observer = new MutationObserver(() => this.injectIcon());
+            this.observer.observe(this.home, { childList: true, subtree: true });
+        }
+"""
+          if old not in text:
+              raise SystemExit('target block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          rm -f .github/workflows/fix-attached-character-profile.yml
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: support character profile on existing phone pages'
+          git push origin HEAD:feat/tavern-scene-image-bridge
