@@ -29,6 +29,14 @@ function dateString(timestamp = Date.now()) {
     return `${y}-${m}-${d}`;
 }
 
+function normalizeAliases(value) {
+    return [...new Set(
+        (Array.isArray(value) ? value : String(value || '').split(/[,，]/))
+            .map(item => String(item || '').trim())
+            .filter(Boolean),
+    )];
+}
+
 export class CharacterProfileService {
     constructor(context, worldbookService, storage, ai) {
         this.ctx = context;
@@ -72,6 +80,10 @@ export class CharacterProfileService {
 
     getSettings() {
         return this.storage.getSettings();
+    }
+
+    async getWorldbookNames() {
+        return this.worldbook.getAllWorldbookNames();
     }
 
     async getWorldbookCandidates(searchText = '') {
@@ -129,17 +141,18 @@ export class CharacterProfileService {
         return result || `【角色资料·动态】${profile.characterName}`;
     }
 
-    async createProfile({ characterName, aliases = [], fixedSourceRefs = [] }) {
+    async createProfile({
+        characterName,
+        aliases = [],
+        fixedSourceRefs = [],
+        sourceWorldbookName = null,
+        outputWorldbookName = null,
+    }) {
         const info = this.getContextInfo();
         const cleanName = String(characterName || '').trim();
         if (!cleanName) throw new Error('请输入角色姓名。');
 
-        const normalizedAliases = [...new Set(
-            (Array.isArray(aliases) ? aliases : String(aliases || '').split(/[,，]/))
-                .map(item => String(item || '').trim())
-                .filter(Boolean),
-        )];
-
+        const normalizedAliases = normalizeAliases(aliases);
         const profileId = `tsp_${hashString(`${info.cardName}|${info.chatId}|${cleanName}`)}`;
         const existing = this.storage.get(profileId);
         if (existing) throw new Error('当前聊天中已经存在同名角色资料。');
@@ -158,6 +171,8 @@ export class CharacterProfileService {
             characterName: cleanName,
             aliases: normalizedAliases,
             fixedSources,
+            sourceWorldbookName: sourceWorldbookName || fixedSources[0]?.bookName || null,
+            outputWorldbookName: outputWorldbookName || null,
             dynamic: emptyDynamicProfile(),
             dynamicEntry: null,
             alwaysInject: false,
@@ -187,6 +202,51 @@ export class CharacterProfileService {
 
         await this.storage.upsert(profile);
         return profile;
+    }
+
+    async createProfileFromWorldbook({
+        worldbookName,
+        characterName,
+        aliases = [],
+    }) {
+        const info = this.getContextInfo();
+        const bookName = String(worldbookName || '').trim();
+        const cleanName = String(characterName || info.cardName || '').trim();
+
+        if (!bookName) throw new Error('请选择一本世界书。');
+        if (!cleanName) throw new Error('无法确定角色姓名。');
+
+        const settings = this.getSettings();
+        const messages = this.getMessages();
+        const initialMessages = messages.slice(-Math.max(1, Number(settings.maxInitialMessages) || 60));
+        const entries = await this.worldbook.getNormalizedEntries(bookName);
+        const selection = await this.ai.selectCharacterSources({
+            characterName: cleanName,
+            bookName,
+            entries,
+            messages: initialMessages,
+        });
+
+        const selectedSet = new Set(selection.entryIndexes);
+        const refs = entries
+            .filter(entry => selectedSet.has(entry.index))
+            .map(entry => ({
+                bookName,
+                uid: entry.uid,
+                entryName: entry.name,
+            }));
+
+        const mergedAliases = normalizeAliases([
+            ...normalizeAliases(aliases),
+            ...normalizeAliases(selection.aliases),
+        ]).filter(alias => alias !== cleanName);
+
+        return this.createProfile({
+            characterName: cleanName,
+            aliases: mergedAliases,
+            fixedSourceRefs: refs,
+            sourceWorldbookName: bookName,
+        });
     }
 
     async refreshFixedSources(profile) {
@@ -284,6 +344,7 @@ export class CharacterProfileService {
             '【角色动态资料】',
             '',
             `角色：${profile.characterName}`,
+            `固定资料来源世界书：${profile.sourceWorldbookName || '未记录'}`,
             `更新时间：${new Date(profile.updatedAt).toLocaleString()}`,
             '',
             `当前状态：\n${data.currentStatus || '暂无明确变化'}`,
@@ -316,8 +377,9 @@ export class CharacterProfileService {
             `<!-- TSP_CHARACTER: ${profile.characterName} -->`,
             `<!-- TSP_CARD: ${profile.cardName} -->`,
             `<!-- TSP_CHAT_ID: ${profile.chatId} -->`,
+            `<!-- TSP_SOURCE_WORLD: ${profile.sourceWorldbookName || ''} -->`,
             `<!-- TSP_LAST_MESSAGE_ID: ${profile.lastProcessedMessageId} -->`,
-            '<!-- TSP_SCHEMA_VERSION: 1 -->',
+            '<!-- TSP_SCHEMA_VERSION: 2 -->',
         ];
 
         return lines.join('\n');
