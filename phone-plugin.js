@@ -103,6 +103,7 @@ function createPhoneContext() {
         registerModule(name, module) { modules.set(name, module); },
         getModule(name) { return modules.get(name) || null; },
         log(scope, ...args) { console.log(`[ChamiPhone/${scope}]`, ...args); },
+        warn(scope, ...args) { console.warn(`[ChamiPhone/${scope}]`, ...args); },
         error(scope, ...args) { console.error(`[ChamiPhone/${scope}]`, ...args); },
         async cleanup() {
             for (const module of modules.values()) {
