@@ -4,6 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 const names = new Set();
 let needsDefault = false;
+const externalImports = new Set();
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -14,11 +15,22 @@ function walk(dir) {
   }
 }
 
+function isExternal(file, specifier) {
+  if (specifier.startsWith('/')) return true;
+  if (!specifier.startsWith('.')) return false;
+  const resolved = path.resolve(path.dirname(file), specifier);
+  return !resolved.startsWith(`${root}${path.sep}`) && resolved !== root;
+}
+
 function scan(file) {
   const source = fs.readFileSync(file, 'utf8');
-  const re = /import\s*([^;]+?)\s*from\s*(['"])(\/[^'"]+\.js)\2/g;
+  const re = /import\s*([^;]+?)\s*from\s*(['"])([^'"]+\.js)\2/g;
   for (const match of source.matchAll(re)) {
     const clause = match[1].trim();
+    const specifier = match[3];
+    if (!isExternal(file, specifier)) continue;
+    externalImports.add(`${path.relative(root, file)} -> ${specifier}`);
+
     if (clause.startsWith('{')) {
       const inside = clause.slice(1, clause.lastIndexOf('}'));
       for (const part of inside.split(',')) {
@@ -45,11 +57,11 @@ walk(root);
 const lines = [
   'const noop = () => undefined;',
   'const asyncNoop = async () => undefined;',
-  'const eventSource = { on: noop, off: noop, emit: noop };',
+  'const eventSourceValue = { on: noop, off: noop, emit: noop };',
 ];
 for (const name of [...names].sort()) {
   let value = 'noop';
-  if (/eventSource/i.test(name)) value = 'eventSource';
+  if (/eventSource/i.test(name)) value = 'eventSourceValue';
   else if (/event_types/i.test(name)) value = '{}';
   else if (/chat|characters|groups|extension_settings|power_user|settings/i.test(name)) value = '[]';
   else if (/save|load|fetch|generate|update|delete|create|write|read/i.test(name)) value = 'asyncNoop';
@@ -58,3 +70,4 @@ for (const name of [...names].sort()) {
 if (needsDefault) lines.push('export default {};');
 fs.writeFileSync(path.join(root, 'tests/generated-stubs.mjs'), `${lines.join('\n')}\n`);
 console.log(`Generated ${names.size} SillyTavern named export stubs.`);
+console.log([...externalImports].sort().join('\n'));
