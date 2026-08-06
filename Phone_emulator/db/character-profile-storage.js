@@ -11,6 +11,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     insertionOrder: 100,
     maxInitialMessages: 60,
     overlapMessages: 5,
+    apiPresetId: null,
 });
 
 export class CharacterProfileStorage {
