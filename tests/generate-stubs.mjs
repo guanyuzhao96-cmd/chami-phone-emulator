@@ -63,8 +63,8 @@ for (const name of [...names].sort()) {
   let value = 'noop';
   if (/eventSource/i.test(name)) value = 'eventSourceValue';
   else if (/event_types/i.test(name)) value = '{}';
-  else if (/chat|characters|groups|extension_settings|power_user|settings/i.test(name)) value = '[]';
-  else if (/save|load|fetch|generate|update|delete|create|write|read/i.test(name)) value = 'asyncNoop';
+  else if (/save|load|fetch|generate|update|delete|create|write|read|send|open|close|refresh|reload/i.test(name)) value = 'asyncNoop';
+  else if (/^(chat|characters|groups|extension_settings|power_user|settings)$/i.test(name)) value = '[]';
   lines.push(`export const ${name} = ${value};`);
 }
 if (needsDefault) lines.push('export default {};');
