@@ -26,10 +26,7 @@ const eventSource = { on() {}, off() {}, emit() {} };
 const stContext = {
   name1: 'Tester', name2: 'Test Character', chatId: 'audit-chat', characterId: 0,
   characters: [{ name: 'Test Character' }],
-  chat: [
-    { is_user: false, name: 'Test Character', mes: '你好。' },
-    { is_user: true, name: 'Tester', mes: '测试消息。' },
-  ],
+  chat: [{ is_user: false, name: 'Test Character', mes: '你好。' }],
   eventSource,
   getWorldInfoNames: () => [],
 };
@@ -37,25 +34,16 @@ window.SillyTavern = globalThis.SillyTavern = {
   getContext: () => stContext,
   getCurrentChatId: () => 'audit-chat',
 };
-window.toastr = globalThis.toastr = {
-  success(...args) { report.toasts.push(['success', ...args.map(String)]); },
-  info(...args) { report.toasts.push(['info', ...args.map(String)]); },
-  warning(...args) { report.toasts.push(['warning', ...args.map(String)]); },
-  error(...args) { report.toasts.push(['error', ...args.map(String)]); },
-};
+window.toastr = globalThis.toastr = { success() {}, info() {}, warning() {}, error() {} };
 window.callPopup = globalThis.callPopup = async () => null;
-window.fetch = globalThis.fetch = async (url, options = {}) => {
-  report.fetches.push({ url: String(url), body: String(options.body || '').slice(0, 4000) });
-  return {
-    ok: true, status: 200,
-    json: async () => ({ choices: [{ message: { content: '{"reply":"好的"}' } }] }),
-    text: async () => '{"reply":"好的"}',
-    blob: async () => new Blob(),
-  };
-};
+window.fetch = globalThis.fetch = async () => ({
+  ok: true, status: 200,
+  json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+  text: async () => 'ok', blob: async () => new Blob(),
+});
 window.__TSP_IMAGE_TEST_API__ = { GeneratorManager: { async generate() { return { url: 'x' }; } } };
 
-const report = { error: null, phone: {}, chatObjects: {}, dom: [], aiCalls: [], toasts: [], fetches: [], featureConfigs: {} };
+const report = { error: null, messageMethods: {}, aiMethods: {}, presetMethods: {}, attempts: {}, configs: {} };
 async function waitFor(predicate, message, timeoutMs = 12000) {
   const end = Date.now() + timeoutMs;
   while (!predicate() && Date.now() < end) {
@@ -64,77 +52,94 @@ async function waitFor(predicate, message, timeoutMs = 12000) {
   }
   if (!predicate()) throw new Error(`${message}: ${JSON.stringify(window.__CHAMI_PHONE_STATUS__)}`);
 }
-function describe(value) {
-  const proto = value ? Object.getPrototypeOf(value) : null;
-  return {
-    ctor: value?.constructor?.name || null,
-    keys: value ? Object.keys(value) : [],
-    methods: proto ? Object.getOwnPropertyNames(proto).filter(x => x !== 'constructor').map(name => ({ name, arity: typeof value[name] === 'function' ? value[name].length : null })) : [],
-  };
+function methodSources(object, regex) {
+  const out = {};
+  const proto = object ? Object.getPrototypeOf(object) : null;
+  if (!proto) return out;
+  for (const name of Object.getOwnPropertyNames(proto)) {
+    if (name === 'constructor' || !regex.test(name) || typeof object[name] !== 'function') continue;
+    try { out[name] = Function.prototype.toString.call(object[name]).slice(0, 40000); }
+    catch (e) { out[name] = `ERR:${e.message}`; }
+  }
+  return out;
 }
-function snap(label) {
-  const screen = document.querySelector('.tsp-phone-screen');
-  report.dom.push({
-    label,
-    text: (screen?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 12000),
-    html: (screen?.innerHTML || '').slice(0, 24000),
-    inputs: [...(screen?.querySelectorAll('input,textarea,button,select') || [])].map(el => ({
-      tag: el.tagName, id: el.id, cls: el.className, type: el.type, placeholder: el.placeholder,
-      text: el.textContent?.trim().slice(0, 100), value: el.value, dataset: { ...el.dataset }, disabled: el.disabled,
-    })),
-  });
+function plain(value) {
+  try { return JSON.parse(JSON.stringify(value, (_k, v) => typeof v === 'function' ? '[fn]' : v)); }
+  catch { return String(value); }
 }
 
 try {
   await import('../phone-plugin.js');
-  await waitFor(() => window.ChamiPhoneEmulator?.instance, 'phone init');
+  await waitFor(() => window.ChamiPhoneEmulator?.instance?.messageUI, 'phone init');
   const phone = window.ChamiPhoneEmulator.instance;
-  report.phone = describe(phone);
-  for (const key of Object.keys(phone)) {
-    if (/chat|message|contact|friend|ui/i.test(key)) report.chatObjects[key] = describe(phone[key]);
-  }
+  const ui = phone.messageUI;
+  const ai = phone.aiRequest;
+  const preset = ai.preset;
+
+  report.messageMethods = methodSources(ui, /sendUserMessage|getAIResponse|openChatDetail|loadAndRenderMessages|formatMessage|processImage/i);
+  report.aiMethods = methodSources(ai, /chat|message|request|parse|feature|response/i);
+  report.presetMethods = methodSources(preset, /chat|message|reply|response/i);
+
   for (const feature of ['chat', 'moments', 'forum']) {
-    try { report.featureConfigs[feature] = await phone.aiRequest._getFeatureConfig(feature); }
-    catch (e) { report.featureConfigs[feature] = `ERR:${e.message}`; }
+    try { report.configs[feature] = plain(await ai._getFeatureConfig(feature)); }
+    catch (e) { report.configs[feature] = `ERR:${e.message}`; }
   }
 
-  const proto = Object.getPrototypeOf(phone.aiRequest);
-  for (const name of Object.getOwnPropertyNames(proto)) {
-    if (typeof phone.aiRequest[name] !== 'function') continue;
-    if (!/request|chat|message|reply/i.test(name)) continue;
-    const original = phone.aiRequest[name].bind(phone.aiRequest);
-    phone.aiRequest[name] = async (...args) => {
-      report.aiCalls.push({ name, args: JSON.parse(JSON.stringify(args, (_k, v) => typeof v === 'function' ? '[fn]' : v)).slice?.(0, 10) || args });
-      if (name === 'request' || name === 'sendRequest') return '{"reply":"好的","message":"好的","content":"好的"}';
-      try { return await original(...args); } catch (e) { report.aiCalls.push({ name: `${name}:ERROR`, error: e.message }); throw e; }
+  const created = await phone.chatStorage.createContact({
+    name: 'Audit Friend',
+    nickname: 'Audit Friend',
+    characterName: 'Audit Friend',
+    description: '测试联系人',
+    avatar: '',
+  });
+  report.attempts.createdContact = plain(created);
+  const contacts = await phone.chatStorage.getContacts();
+  report.attempts.contacts = plain(contacts);
+  ui.setContacts(contacts);
+  const contact = contacts[0] || created;
+  ui.currentContact = contact;
+  ui.currentCharacter = 'Test Character';
+  report.attempts.currentContact = plain(ui.currentContact);
+
+  const originalRequest = ai.request.bind(ai);
+  const originalSendRequest = ai.sendRequest.bind(ai);
+  const originalSendChatRequest = typeof ai.sendChatRequest === 'function' ? ai.sendChatRequest.bind(ai) : null;
+  const captures = [];
+  ai.request = async (...args) => {
+    captures.push({ method: 'request', args: plain(args) });
+    return '[{"content":"你好，我收到了。","type":"text"}]';
+  };
+  ai.sendRequest = async (...args) => {
+    captures.push({ method: 'sendRequest', args: plain(args) });
+    return '[{"content":"你好，我收到了。","type":"text"}]';
+  };
+  if (originalSendChatRequest) {
+    ai.sendChatRequest = async (...args) => {
+      captures.push({ method: 'sendChatRequest', args: plain(args) });
+      try {
+        const result = await originalSendChatRequest(...args);
+        captures.push({ method: 'sendChatRequest:result', result: plain(result) });
+        return result;
+      } catch (e) {
+        captures.push({ method: 'sendChatRequest:error', error: e.stack || e.message });
+        throw e;
+      }
     };
   }
 
-  window.ChamiPhoneEmulator.open();
-  await waitFor(() => document.querySelector('[data-app="chat"]'), 'chat icon');
-  snap('home');
-  document.querySelector('[data-app="chat"]').click();
-  await new Promise(r => setTimeout(r, 500));
-  snap('chat-open');
-
-  const screen = document.querySelector('.tsp-phone-screen');
-  const candidate = [...screen.querySelectorAll('button, [role="button"], .tsp-phone-chat-item, .tsp-phone-contact-item')]
-    .find(el => /Test Character|聊天|消息/.test(el.textContent || '') && !/返回/.test(el.textContent || ''));
-  candidate?.click();
-  await new Promise(r => setTimeout(r, 500));
-  snap('after-first-candidate-click');
-
-  const input = screen.querySelector('textarea:not([disabled]), input[type="text"]:not([disabled])');
-  if (input) {
-    input.value = '你好，这是发送测试';
-    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  try {
+    report.attempts.getAIResponse = plain(await ui.getAIResponse('你好，这是测试'));
+  } catch (e) {
+    report.attempts.getAIResponseError = e.stack || e.message;
   }
-  const send = [...screen.querySelectorAll('button')].find(el => /发送|send/i.test(el.textContent || '') || /send/i.test(el.className || '') || el.dataset?.action === 'send');
-  send?.click();
-  await new Promise(r => setTimeout(r, 1500));
-  snap('after-send');
+  report.attempts.captures = captures;
+
+  ai.request = originalRequest;
+  ai.sendRequest = originalSendRequest;
+  if (originalSendChatRequest) ai.sendChatRequest = originalSendChatRequest;
 } catch (error) {
   report.error = error?.stack || String(error);
 }
+
 await writeFile('tests/chat-send-audit-report.json', JSON.stringify(report, null, 2));
 window.close();
