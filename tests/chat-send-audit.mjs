@@ -86,11 +86,8 @@ try {
   }
 
   const created = await phone.chatStorage.createContact({
-    name: 'Audit Friend',
-    nickname: 'Audit Friend',
-    characterName: 'Audit Friend',
-    description: '测试联系人',
-    avatar: '',
+    name: 'Audit Friend', nickname: 'Audit Friend', characterName: 'Audit Friend',
+    description: '测试联系人', avatar: '',
   });
   report.attempts.createdContact = plain(created);
   const contacts = await phone.chatStorage.getContacts();
@@ -142,4 +139,13 @@ try {
 }
 
 await writeFile('tests/chat-send-audit-report.json', JSON.stringify(report, null, 2));
+const diagnostic = {
+  error: report.error,
+  configs: report.configs,
+  attempts: report.attempts,
+  messageMethods: Object.fromEntries(Object.entries(report.messageMethods).map(([k, v]) => [k, v.slice(0, 1800)])),
+  aiMethods: Object.fromEntries(Object.entries(report.aiMethods).map(([k, v]) => [k, v.slice(0, 1800)])),
+  presetMethods: Object.fromEntries(Object.entries(report.presetMethods).map(([k, v]) => [k, v.slice(0, 1800)])),
+};
 window.close();
+throw new Error(`CHAT_AUDIT_RESULT=${JSON.stringify(diagnostic)}`);
