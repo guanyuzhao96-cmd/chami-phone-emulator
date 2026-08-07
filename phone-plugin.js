@@ -5,9 +5,10 @@ import { initPhoneEmulator } from './Phone_emulator/index.js';
 import { PhoneChatStorage } from './Phone_emulator/db/chat-storage.js';
 import { PhoneMemeStorage } from './Phone_emulator/db/meme-storage.js';
 import { PhoneAIRequest } from './Phone_emulator/api/ai-request.js';
+import { patchPhoneChatResponseCompat } from './Phone_emulator/js/chat-response-compat.js';
 
 const PLUGIN_ID = 'chami-phone-emulator';
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const MODULE_NAME = 'phoneEmulator';
 const STORAGE_PREFIX = 'chami_phone_fallback:';
 
@@ -129,6 +130,7 @@ async function createPhoneAIRuntime(context) {
     aiRequest.setChatStorage(chatStorage);
     aiRequest.setMemeStorage(memeStorage);
     await aiRequest.init();
+    patchPhoneChatResponseCompat(aiRequest, context);
     return {
         aiRequest,
         chatStorage,
@@ -200,6 +202,7 @@ async function initializeStandalonePhone() {
     phoneInstance = phoneContext.getModule(MODULE_NAME);
     if (!phoneInstance || !document.querySelector('.tsp-phone-fab')) throw new Error('手机主体初始化完成，但未创建悬浮按钮。');
 
+    patchPhoneChatResponseCompat(phoneInstance.aiRequest, phoneContext);
     exposePhoneAIRuntime({
         aiRequest: phoneInstance.aiRequest,
         chatStorage: phoneInstance.chatStorage,
