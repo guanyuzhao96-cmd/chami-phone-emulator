@@ -8,7 +8,7 @@ import { PhoneAIRequest } from './Phone_emulator/api/ai-request.js';
 import { patchPhoneChatResponseCompat } from './Phone_emulator/js/chat-response-compat.js';
 
 const PLUGIN_ID = 'chami-phone-emulator';
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 const MODULE_NAME = 'phoneEmulator';
 const STORAGE_PREFIX = 'chami_phone_fallback:';
 
@@ -16,6 +16,7 @@ let initialized = false;
 let phoneInstance = null;
 let phoneAIRuntime = null;
 let imageBridge = null;
+let campusHelper = null;
 let contextReady = false;
 
 function traceAccess(scope, property, value) {
@@ -159,7 +160,18 @@ async function loadAddonModules() {
     await import('./Phone_emulator/js/character-profile-bootstrap.js');
     const bridgeModule = await import('./Phone_emulator/js/tavern-scene-image-bridge.js');
     imageBridge = bridgeModule.initTavernSceneImageBridge();
+    const campusHelperModule = await import('./Phone_emulator/ui/campus-helper.js');
+    campusHelper = campusHelperModule.initCampusHelperPage(createContextForCampusHelper());
     setStatus('addon-modules-ready');
+}
+
+function createContextForCampusHelper() {
+    return {
+        log(scope, ...args) { console.log(`[ChamiPhone/${scope}]`, ...args); },
+        warn(scope, ...args) { console.warn(`[ChamiPhone/${scope}]`, ...args); },
+        error(scope, ...args) { console.error(`[ChamiPhone/${scope}]`, ...args); },
+        helpers: { showToast },
+    };
 }
 
 function exposePlugin({ mode, context = null, instance = null, existingFab = null }) {
@@ -172,6 +184,7 @@ function exposePlugin({ mode, context = null, instance = null, existingFab = nul
         instance,
         aiRuntime: phoneAIRuntime,
         imageBridge,
+        campusHelper,
         open: () => instance?.openModal?.() || existingFab?.click?.(),
         close: () => instance?.closeModal?.(),
     };
